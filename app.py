@@ -14,7 +14,7 @@ if 'user_score' not in st.session_state:
     st.session_state.user_score = 0
 MAX_SCORE = 100
 
-# --- 2. A-Z 完整資料庫 (26字母全資料) ---
+# --- 2. A-Z 完整資料庫 (IPA 與 發音秘訣) ---
 @st.cache_data
 def get_full_db():
     return {
@@ -65,23 +65,13 @@ with st.sidebar:
         st.session_state.user_score = 0
         st.rerun()
 
-# --- 4. 輔助函數 (解決無法重複播放與 Phonics 模式) ---
-def play_audio(text, lang, speed, autoplay=False, phonics_mode=False, ipa_symbol=""):
-    # 清理非英文文字
+# --- 4. 輔助函數 (解決重複播放與發音邏輯) ---
+def play_audio(text, lang, speed, autoplay=False, is_phonics=False):
     clean = re.sub(r'[\u4e00-\u9fa5]', '', text)
     l_code = 'en' if "英" in lang else 'ja'
     
-    # 【新增】AAA æææ 模式：字母名三遍 + 音標音三遍
-    if phonics_mode:
-        # 去掉斜線
-        ipa_clean = ipa_symbol.replace("/", "").replace("[", "").replace("]", "")
-        final_text = f"{clean}, {clean}, {clean}, {ipa_clean}, {ipa_clean}, {ipa_clean}"
-    else:
-        final_text = clean
-
-    tts = gTTS(text=final_text, lang=l_code, slow=(speed < 1.0))
-    
-    # 【關鍵】生成帶有時間戳記的文件名，強制瀏覽器不緩存，實現無限重複播放
+    # 移除重複多次的邏輯，按一遍唸一次
+    tts = gTTS(text=clean, lang=l_code, slow=(speed < 1.0))
     filename = f"speech_{datetime.now().strftime('%H%M%S%f')}.mp3"
     tts.save(filename)
     
@@ -92,14 +82,12 @@ def play_audio(text, lang, speed, autoplay=False, phonics_mode=False, ipa_symbol
             st.markdown(f"""<audio autoplay="true"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>""", unsafe_allow_html=True)
     else:
         st.audio(filename)
-    
-    # 這裡不刪除文件，因為 Streamlit 的渲染機制可能會需要它
 
 # --- 5. 功能分頁架構 ---
-tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字發音", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母發音教學", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
 
 with tab1:
-    st.header("🔤 字母大小寫與 Phonics 自然發音")
+    st.header("🔤 字母與拼字發音練習")
     letter = st.selectbox("請選擇字母 (A-Z)", list(DB.keys()))
     info = DB[letter]
     
@@ -112,11 +100,17 @@ with tab1:
                     <span style="font-size: 100px; font-weight: bold; color: #1C83E1;">{info['lower']}</span>
                 </div>
             """, unsafe_allow_html=True)
-            # 【核心修改】AAA æææ 發音按鈕
-            if st.button(f"🔊 聽字母 Phonics 發音 (AAA {info['ipa']})", key=f"voice_{letter}"):
-                play_audio(info['upper'], target_lang, voice_speed, autoplay=True, phonics_mode=True, ipa_symbol=info['ipa'])
         with c_p2:
-            st.markdown(f"### 🎤 IPA 音標: `{info['ipa']}`")
+            # 區分字母名發音與拼字發音 (IPA)
+            st.write("### 🔊 聽聽看發音")
+            if st.button(f"🗣️ 唸唸字母名 (Name: {info['upper']})", key="v_name"):
+                play_audio(info['upper'], target_lang, voice_speed, autoplay=True)
+            
+            # 去除音標斜線以供朗讀拼字發音
+            ipa_sound = info['ipa'].replace("/", "")
+            if st.button(f"👄 唸唸拼字音 (Sound: {info['ipa']})", key="v_sound"):
+                play_audio(ipa_sound, target_lang, voice_speed, autoplay=True)
+            
             st.success(f"**💡 發音小祕訣:**\n{info['tip']}")
 
     st.divider()
@@ -135,13 +129,14 @@ with tab1:
                     st.session_state.user_score = min(st.session_state.user_score + 1, MAX_SCORE)
             st.divider()
 
+# --- Tab 2: 短文解析 (確保解析區塊都在) ---
 with tab2:
     st.header("📖 自定義短文教學解析")
-    user_topic = st.text_input("📝 請輸入短文主題", "Forest")
+    user_topic = st.text_input("📝 請輸入短文主題", "Park")
     user_inst = st.text_area("✍️ 給老師的指令", "請用簡單句型。")
     if st.button("🚀 生成教材內容"):
         st.session_state['story_text'] = f"The {user_topic} is a wonderful place. We can see many friends here. We play together all day. It is a very happy day!"
-        st.session_state['story_vocab'] = [(f"{user_topic}", "主題名詞"), ("Wonderful", "極好的")]
+        st.session_state['story_vocab'] = [(f"{user_topic}", "主題名詞"), ("Wonderful", "極好的"), ("Together", "一起")]
         st.session_state['story_gram'] = f"現在式用法：使用 'is' 描述狀態。"
 
     if 'story_text' in st.session_state:
@@ -162,6 +157,7 @@ with tab2:
             st.success(st.session_state['story_gram'])
         with st.expander("👁️ 查看中文翻譯"): st.write("（此處顯示翻譯內容）")
 
+# --- Tab 3: 遊戲區 ---
 with tab3:
     st.header("🎮 聽音辨圖挑戰")
     if 'game_data' not in st.session_state:
@@ -178,7 +174,7 @@ with tab3:
         st.balloons(); time.sleep(1.5); st.session_state.show_reward = False; st.rerun()
 
     st.subheader(f"🎯 挑戰目標：{'聽單字' if st.session_state.game_mode == 'word' else '聽句子'}辨圖")
-    if st.button("🔊 播放/再聽一次題目音檔"):
+    if st.button("🔊 播放題目音檔"):
         play_audio(target[0] if st.session_state.game_mode == 'word' else target[2], target_lang, voice_speed, autoplay=True)
     
     cols = st.columns(3)
