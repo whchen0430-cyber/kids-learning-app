@@ -5,22 +5,21 @@ import re
 import random
 import time
 
-# --- 1. 頁面配置與積分系統 ---
+# --- 1. 頁面配置與積分系統 (結構鎖定) ---
 st.set_page_config(page_title="恐龍語文冒險樂園", page_icon="🦖", layout="wide")
 
-# 初始化積分與遊戲序號
 if 'user_score' not in st.session_state:
     st.session_state.user_score = 0
 if 'game_turn' not in st.session_state:
     st.session_state.game_turn = 0
 
-MAX_SCORE = 150 # 調整最高分數為 150
+MAX_SCORE = 150 
 
-# 積分自動歸零邏輯
+# 積分歸零邏輯
 if st.session_state.user_score >= MAX_SCORE:
     st.session_state.user_score = 0
 
-# --- 2. A-Z 完整資料庫 (鎖定 26 字母) ---
+# --- 2. A-Z 完整資料庫 (結構鎖定) ---
 @st.cache_data
 def get_full_db():
     return {
@@ -44,7 +43,7 @@ def get_full_db():
         "R": {"upper": "R", "lower": "r", "words": [("Rabbit", "🐰", "White rabbit.", "小兔子。"), ("Rain", "🌧️", "Cold rain.", "冷冷的雨。"), ("Robot", "🤖", "Cool robot.", "機器人。"), ("Rainbow", "🌈", "Beautiful rainbow.", "彩虹。"), ("Rocket", "🚀", "Fast rocket.", "火箭。")]},
         "S": {"upper": "S", "lower": "s", "words": [("Sun", "☀️", "Hot sun.", "太陽。"), ("Snake", "🐍", "Long snake.", "長蛇。"), ("Star", "⭐", "Twinkle star.", "閃閃星星。"), ("Spider", "🕷️", "Small spider.", "小蜘蛛。"), ("Ship", "🚢", "Big ship.", "大船。")]},
         "T": {"upper": "T", "lower": "t", "words": [("Tiger", "🐯", "Strong tiger.", "老虎。"), ("Tree", "🌳", "Tall tree.", "大樹。"), ("Train", "🚆", "Long train.", "長火車。"), ("Tomato", "🍅", "Red tomato.", "紅番茄。"), ("Telephone", "☎️", "Call me.", "打給我。")]},
-        "U": {"upper": "U", "lower": "u", "words": [("Umbrella", "🌂", "My umbrella.", "我的雨傘。"), ("Unicorn", "🦄", "Magic unicorn.", "獨告獸。"), ("Up", "⬆️", "Go up.", "向上。"), ("Under", "👇", "Down there.", "在下面。"), ("Uniform", "🥋", "School uniform.", "制服。")]},
+        "U": {"upper": "U", "lower": "u", "words": [("Umbrella", "🌂", "My umbrella.", "我的雨傘。"), ("Unicorn", "🦄", "Magic unicorn.", "獨角獸。"), ("Up", "⬆️", "Go up.", "向上。"), ("Under", "👇", "Down there.", "在下面。"), ("Uniform", "🥋", "School uniform.", "制服。")]},
         "V": {"upper": "V", "lower": "v", "words": [("Van", "🚐", "Drive a van.", "箱型車。"), ("Violin", "🎻", "Play violin.", "小提琴。"), ("Vase", "🏺", "Pretty vase.", "花瓶。"), ("Vegetable", "🥦", "Healthy vegetables.", "健康蔬菜。"), ("Volcano", "🌋", "Hot volcano.", "火山。")]},
         "W": {"upper": "W", "lower": "w", "words": [("Whale", "🐋", "Big whale.", "大鯨魚。"), ("Watch", "⌚", "My watch.", "手錶。"), ("Water", "💧", "Drink water.", "水。"), ("Witch", "🧙‍♀️", "Funny witch.", "巫婆。"), ("Window", "🪟", "Close window.", "窗戶。")]},
         "X": {"upper": "X", "lower": "x", "words": [("Xylophone", "🎼", "Play xylophone.", "木琴。"), ("Box", "📦", "A box.", "盒子。"), ("Fox", "🦊", "Red fox.", "狐狸。"), ("Six", "6️⃣", "Number six.", "數字六。"), ("X-ray", "🩻", "X-ray photo.", "X光。")]},
@@ -54,33 +53,37 @@ def get_full_db():
 
 DB = get_full_db()
 
-# --- 3. 側邊欄：進度與恐龍成長 ---
+# --- 3. 側邊欄：進度與專用恐龍進化鏈 ---
 with st.sidebar:
     st.header("👤 學習者狀態")
     score = st.session_state.user_score
     st.write(f"🌟 目前積分：{score} / {MAX_SCORE}")
     st.progress(min(score / MAX_SCORE, 1.0))
     
-    # 恐龍成長階段邏輯 (分得更細)
+    # 恐龍酷炫成長進化鏈 (100% 恐龍系，視覺校正版)
     if score < 30:
-        d_emo = "🥚"
-        d_text = "還是一顆蛋..."
+        d_emo, d_text, d_size, d_color = "🥚", "神祕的灰蛋 (沉睡中)", "100px", "#808080"
     elif score < 60:
-        d_emo = "🐣"
-        d_text = "破殼而出了！"
+        # 🐣 Emoji其實是雞，改用 🦖 並縮小字體來代表剛出生
+        d_emo, d_text, d_size, d_color = "🦖", "幼龍孵化現身！", "60px", "#90EE90"
     elif score < 90:
-        d_emo = "🦖"
-        d_text = "變成小恐龍了！"
+        # 用 🦕 代表相對溫和的草食龍代表「成長中」
+        d_emo, d_text, d_size, d_color = "🦕", "成長為草食劍龍", "90px", "#2E8B57"
     elif score < 120:
-        d_emo = "🦕"
-        d_text = "長成大長頸龍了！"
+        # 用 🦖 並放大字體代表終極肉食龍
+        d_emo, d_text, d_size, d_color = "🦖", "進化成霸王龍之王！", "120px", "#FF4500"
     else:
-        d_emo = "🐉"
-        d_text = "變成終極巨龍了！"
+        d_emo, d_text, d_size, d_color = "🐲", "終極噴火神龍！", "150px", "#FF0000"
 
-    st.markdown(f"<div style='text-align:center;'><h1 style='font-size:100px;'>{d_emo}</h1><p>{d_text}</p></div>", unsafe_allow_html=True)
-    st.divider()
+    # 使用 Markdown 結合動態 CSS 來顯示恐龍，保證文字描述與符號邏輯一致
+    st.markdown(f"""
+        <div style='text-align:center; background-color:#f9f9f9; padding:15px; border-radius:15px; border:2px solid #e0e0e0;'>
+            <h1 style='font-size:{d_size}; margin:0;'>{d_emo}</h1>
+            <p style='font-weight:bold; color:{d_color}; font-size:20px; margin-top:10px;'>{d_text}</p>
+        </div>
+    """, unsafe_allow_html=True)
     
+    st.divider()
     user_age = st.select_slider("學生年齡", options=[4, 6, 8, 10, 12])
     target_lang = st.radio("目標語言", ["英文 (English)", "日文 (日本語)"])
     voice_speed = st.slider("語速設定", 0.5, 1.0, 0.8)
@@ -88,7 +91,7 @@ with st.sidebar:
         st.session_state.user_score = 0
         st.rerun()
 
-# --- 4. 輔助函數 ---
+# --- 4. 輔助函數 (結構鎖定) ---
 def get_audio_bytes(text, lang_choice, speed):
     clean = re.sub(r'[\u4e00-\u9fa5]', '', text)
     l_code = 'en' if "英" in lang_choice else 'ja'
@@ -97,7 +100,7 @@ def get_audio_bytes(text, lang_choice, speed):
     tts.write_to_fp(fp)
     return fp.getvalue()
 
-# --- 5. 分頁架構 ---
+# --- 5. 功能分頁架構 ---
 tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字練習", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
 
 with tab1:
@@ -122,31 +125,31 @@ with tab1:
                 st.subheader(word)
                 st.write(f"**Sentence:** {sent}")
                 st.caption(f"翻譯：{tran}")
-                if st.button(f"🔊 播放單字發音", key=f"v_w_{word}"):
+                if st.button(f"🔊 聽發音", key=f"v_w_{word}"):
                     st.audio(get_audio_bytes(f"{word}. {sent}", target_lang, voice_speed), format="audio/mp3")
                     st.session_state.user_score = min(st.session_state.user_score + 1, 150)
             st.divider()
 
 with tab2:
-    st.header("📖 短文教學解析")
+    st.header("📖 自定義短文教學解析")
     t_map = {"農場": "Farm", "公園": "Park", "森林": "Forest", "海洋": "Ocean", "太空": "Space"}
     user_topic_cn = st.text_input("📝 請輸入中文主題 (如：農場)", "農場")
     
     if st.button("🚀 生成解析內容"):
         en_t = t_map.get(user_topic_cn, user_topic_cn)
-        # 年齡難度連動
+        # 難度與年齡掛鉤 (結構鎖定)
         if user_age <= 6:
             st.session_state['s_text'] = f"The {en_t} is big. We see many friends. We play together. It is very happy."
             st.session_state['s_gram'] = "基礎句型：主詞 + be動詞 + 形容詞。"
         else:
-            st.session_state['s_text'] = f"The {en_t} is an incredible environment where we can observe wildlife. We enjoy playing with our friends all day long. It's truly a memorable experience for everyone!"
+            st.session_state['s_text'] = f"The {en_t} is an incredible environment where we can observe wildlife. We enjoy playing with our friends all day long. It's truly a memorable experience!"
             st.session_state['s_gram'] = "進階句型：關係副詞 'where' 引導的形容詞子句。"
-        
-        st.session_state['s_voc'] = [(f"{en_t}", "主題"), ("Environment", "環境"), ("Observe", "觀察")]
+        st.session_state['s_voc'] = [(f"{en_t}", "主題"), ("Amazing", "神奇的"), ("Observe", "觀察")]
         st.session_state['s_tr'] = "（中文翻譯將顯示於下方隱藏區）"
 
     if 's_text' in st.session_state:
         st.subheader("📜 課文原文")
+        # 結構鎖定：大字體 + 一句一行
         for s in st.session_state['s_text'].split('.'):
             if s.strip():
                 st.markdown(f"""<div style="font-size: 32px; font-weight: 500; line-height: 1.6; color: #2E4053; margin-bottom: 15px;">• {s.strip()}.</div>""", unsafe_allow_html=True)
@@ -164,8 +167,9 @@ with tab2:
             st.write("這是一個很棒的地方。我們可以看到很多朋友。我們整天玩耍。今天真是快樂的一天！")
 
 with tab3:
-    st.header("🎮 聽音辨圖無限挑戰")
+    st.header("🎮 聽音辨圖挑戰")
     
+    # 鎖定結構：遊戲自動跳下一題機制
     def get_new_question():
         all_words_pool = []
         for l in DB: all_words_pool.extend(DB[l]["words"])
@@ -180,7 +184,7 @@ with tab3:
     curr_q = st.session_state[f"game_q_{st.session_state.game_turn}"]
     curr_target = st.session_state[f"game_target_{st.session_state.game_turn}"]
 
-    if st.button("🔊 點擊產生題目音軌"):
+    if st.button("🔊 產生題目音軌"):
         st.audio(get_audio_bytes(curr_target[0], target_lang, voice_speed), format="audio/mp3")
     
     cols = st.columns(3)
