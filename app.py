@@ -3,6 +3,7 @@ from gtts import gTTS
 import io
 import re
 import random
+import base64
 import time
 
 # --- 1. 頁面配置與積分系統 ---
@@ -12,7 +13,7 @@ if 'user_score' not in st.session_state:
     st.session_state.user_score = 0
 MAX_SCORE = 100
 
-# --- 2. A-Z 完整資料庫 ---
+# --- 2. A-Z 完整資料庫 (鎖定 26 字母) ---
 @st.cache_data
 def get_full_db():
     return {
@@ -58,20 +59,29 @@ with st.sidebar:
     user_age = st.select_slider("學生年齡", options=[4, 6, 8, 10, 12])
     target_lang = st.radio("目標語言", ["英文 (English)", "日文 (日本語)"])
     voice_speed = st.slider("語速設定", 0.5, 1.0, 0.8)
-    if st.button("🔄 積分歸零"):
+    if st.button("🔄 積分歸零 (Reset)"):
         st.session_state.user_score = 0
         st.rerun()
 
-# --- 4. 輔助函數 (直接產生音訊數據流) ---
-def get_audio_bytes(text, lang_choice, speed):
+# --- 4. 輔助函數：Base64 內嵌自動播放技術 ---
+def play_audio_auto(text, lang_choice, speed):
     clean = re.sub(r'[\u4e00-\u9fa5]', '', text)
     l_code = 'en' if "英" in lang_choice else 'ja'
     tts = gTTS(text=clean, lang=l_code, slow=(speed < 1.0))
-    fp = io.BytesIO()
-    tts.write_to_fp(fp)
-    return fp.getvalue()
+    
+    mp3_fp = io.BytesIO()
+    tts.write_to_fp(mp3_fp)
+    b64 = base64.b64encode(mp3_fp.getvalue()).decode()
+    
+    # 這裡使用 HTML5 原生播放器並開啟 autoplay
+    md = f"""
+        <audio autoplay="true">
+            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+        </audio>
+    """
+    st.markdown(md, unsafe_allow_html=True)
 
-# --- 5. 功能分頁 ---
+# --- 5. 功能分頁架構 ---
 tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字練習", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
 
 with tab1:
@@ -83,11 +93,10 @@ with tab1:
         with c1:
             st.markdown(f"""<div style="background-color: #f0f2f6; border-radius: 20px; padding: 20px; text-align: center;"><span style="font-size: 120px; font-weight: bold; color: #FF4B4B;">{info['upper']}</span> <span style="font-size: 100px; font-weight: bold; color: #1C83E1;">{info['lower']}</span></div>""", unsafe_allow_html=True)
         with c2:
-            st.write("### 🗣️ 點擊按鈕生成音軌")
-            if st.button(f"🔊 準備字母 {info['upper']} 的發音", key=f"btn_let_{letter}"):
-                data = get_audio_bytes(info['upper'], target_lang, voice_speed)
-                st.audio(data, format="audio/mp3")
-            st.caption("按鈕按下後會出現音軌播放器，請點擊播放。")
+            st.write("### 🗣️ 自動播放字母音")
+            if st.button(f"🔊 點擊播放字母 {info['upper']} 音", key=f"btn_let_{letter}_{time.time()}"):
+                play_audio_auto(info['upper'], target_lang, voice_speed)
+            st.caption("支援無限重複。初次使用若無聲音，請點擊畫面任一處啟動瀏覽器音訊。")
 
     st.divider()
     st.subheader(f"✨ {letter} 代表單字練習")
@@ -99,43 +108,42 @@ with tab1:
                 st.subheader(word)
                 st.write(f"**Sentence:** {sent}")
                 st.caption(f"翻譯：{tran}")
-                # 這是保證有聲的關鍵：點按鈕 -> 產出專屬音軌
-                if st.button(f"🔊 聽發音", key=f"v_w_{word}"):
-                    data = get_audio_bytes(f"{word}. {sent}", target_lang, voice_speed)
-                    st.audio(data, format="audio/mp3")
+                if st.button(f"🔊 播放單字發音", key=f"v_w_{word}_{time.time()}"):
+                    play_audio_auto(f"{word}. {sent}", target_lang, voice_speed)
                     st.session_state.user_score = min(st.session_state.user_score + 1, MAX_SCORE)
             st.divider()
 
+# --- Tab 2: 短文解析 (中文主題輸入) ---
 with tab2:
     st.header("📖 自定義短文教學解析")
     topic_map = {"農場": "Farm", "公園": "Park", "森林": "Forest", "海洋": "Ocean", "太空": "Space", "學校": "School"}
-    user_topic_cn = st.text_input("📝 請輸入主題 (中文搜尋，如：農場)", "農場")
+    user_topic_cn = st.text_input("📝 請輸入中文主題 (如：農場)", "農場")
     
-    if st.button("🚀 生成解析內容"):
-        en_t = topic_map.get(user_topic_cn, user_topic_cn)
-        st.session_state['s_txt'] = f"The {en_t} is very big. We see many friends here. We play together all day. It is a happy day!"
-        st.session_state['s_voc'] = [(f"{en_t}", "主題"), ("Happy", "快樂")]
-        st.session_state['s_gram'] = f"使用 'is' 描述事物。"
-        st.session_state['s_tr'] = f"這個地方非常大。我們在那裡看到很多朋友。我們整天玩耍。今天真是快樂的一天！"
+    if st.button("🚀 生成解析內容", key="gen_story"):
+        t_en = topic_map.get(user_topic_cn, user_topic_cn)
+        st.session_state['s_text'] = f"The {t_en} is very big. We can see many friends and animals here. We play together all day. It is a very happy day!"
+        st.session_state['s_vocab'] = [(f"{t_en}", "主題"), ("Happy", "快樂"), ("Together", "一起")]
+        st.session_state['s_gram'] = f"現在式用法：使用 'is' 描述事物。"
+        st.session_state['s_tran'] = f"這是一個很棒的地方。我們在那裡看到很多朋友。我們整天在那裡玩。今天真是快樂的一天！"
 
-    if 's_txt' in st.session_state:
+    if 's_text' in st.session_state:
         st.subheader("📜 課文原文")
-        for s in st.session_state['s_txt'].split('.'):
+        # 關鍵：一句一行 + 大字體
+        for s in st.session_state['s_text'].split('.'):
             if s.strip():
                 st.markdown(f"""<div style="font-size: 32px; font-weight: 500; line-height: 1.6; color: #2E4053; margin-bottom: 15px;">• {s.strip()}.</div>""", unsafe_allow_html=True)
-        if st.button("🔊 準備全文朗讀音軌"):
-            data = get_audio_bytes(st.session_state['s_txt'], target_lang, voice_speed)
-            st.audio(data, format="audio/mp3")
+        if st.button("🔊 全文朗讀", key=f"btn_s_full_{time.time()}"):
+            play_audio_auto(st.session_state['s_text'], target_lang, voice_speed)
         
         cv, cg = st.columns(2)
         with cv:
             st.subheader("📝 重點單字")
-            for v, k in st.session_state['s_voc']: st.write(f"• **{v}**: {k}")
+            for v, k in st.session_state['s_vocab']: st.write(f"• **{v}**: {k}")
         with cg:
             st.subheader("💡 文法點撥")
             st.success(st.session_state['s_gram'])
         with st.expander("👁️ 查看中文翻譯"): 
-            st.write(st.session_state['s_tr'])
+            st.write(st.session_state['s_tran'])
 
 with tab3:
     st.header("🎮 聽音辨圖挑戰")
@@ -150,15 +158,14 @@ with tab3:
     if st.session_state.get('show_reward'):
         st.balloons(); time.sleep(1.0); st.session_state.show_reward = False; st.rerun()
 
-    if st.button("🔊 點擊產生題目音軌"):
-        data = get_audio_bytes(target[0], target_lang, voice_speed)
-        st.audio(data, format="audio/mp3")
+    if st.button("🔊 播放題目音檔", key=f"btn_g_q_{time.time()}"):
+        play_audio_auto(target[0], target_lang, voice_speed)
     
     cols = st.columns(3)
     for i, (word, emoji, sent, tran) in enumerate(st.session_state.game_data):
         with cols[i]:
             st.markdown(f"<h1 style='text-align:center; font-size:150px;'>{emoji}</h1>", unsafe_allow_html=True)
-            if st.button(f"{word}", key=f"g_btn_{i}", use_container_width=True):
+            if st.button(f"{word}", key=f"g_btn_{i}_{time.time()}", use_container_width=True):
                 if word == target[0]:
                     st.session_state.user_score = min(st.session_state.user_score + 5, MAX_SCORE); st.session_state.show_reward = True; st.rerun()
                 else: st.error("❌ Try again!")
