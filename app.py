@@ -12,17 +12,19 @@ if 'user_score' not in st.session_state:
     st.session_state.user_score = 0
 if 'game_turn' not in st.session_state:
     st.session_state.game_turn = 0
+if 'story_content' not in st.session_state:
+    st.session_state.story_content = None
 
 MAX_SCORE = 150 
 if st.session_state.user_score >= MAX_SCORE:
     st.session_state.user_score = 0
 
-# --- 2. A-Z 完整資料庫 (鎖定) ---
+# --- 2. A-Z 完整資料庫 ---
 @st.cache_data
 def get_full_db():
     return {
         "A": {"upper": "A", "lower": "a", "words": [("Apple", "🍎", "I like the red apple.", "我喜歡紅蘋果。"), ("Ant", "🐜", "The ant is small.", "螞蟻很小。"), ("Astronaut", "👨‍🚀", "Sky hero.", "太空英雄。"), ("Alligator", "🐊", "Big alligator.", "大鱷魚。"), ("Airplane", "✈️", "Fast airplane.", "快飛機。")]},
-        "B": {"upper": "B", "lower": "b", "words": [("Bear", "🧸", "A brown bear.", "一隻棕熊。"), ("Ball", "⚽", "I kick the ball.", "我踢球。"), ("Banana", "🍌", "Yellow banana.", "黃香蕉。"), ("Bird", "🐦", "The bird sings.", "鳥在唱歌。"), ("Bee", "🐝", "The bee makes honey.", "忙碌的蜜蜂。")]},
+        "B": {"upper": "B", "lower": "b", "words": [("Bear", "🧸", "A brown bear.", "一隻棕熊。"), ("Ball", "⚽", "I kick the ball.", "我踢球。"), ("Banana", "🍌", "Yellow banana.", "黃香蕉。"), ("Bird", "🐦", "The bird sings.", "鳥在唱歌。"), ("Bee", "🐝", "The bee makes honey.", "忙碌ের蜜蜂。")]},
         "C": {"upper": "C", "lower": "c", "words": [("Cat", "🐱", "The cat is cute.", "貓很可愛。"), ("Cake", "🎂", "Happy birthday cake.", "生日蛋糕。"), ("Car", "🚗", "A fast car.", "快車。"), ("Cup", "🥛", "A cup of milk.", "一杯牛奶。"), ("Candy", "🍬", "Sweet candy.", "甜糖果。")]},
         "D": {"upper": "D", "lower": "d", "words": [("Dog", "🐶", "Good doggy.", "好狗狗。"), ("Duck", "🦆", "The duck swims.", "鴨子游泳。"), ("Dolphin", "🐬", "Smart dolphin.", "聰明海豚。"), ("Drum", "🥁", "Play the drum.", "打鼓。"), ("Door", "🚪", "Open the door.", "開門。")]},
         "E": {"upper": "E", "lower": "e", "words": [("Elephant", "🐘", "Big elephant.", "大象很大。"), ("Egg", "🥚", "I eat an egg.", "我吃蛋。"), ("Eagle", "🦅", "The eagle flies.", "老鷹飛。"), ("Eye", "👁️", "Open your eyes.", "張開眼睛。"), ("Ear", "👂", "I hear music.", "我聽見音樂。")]},
@@ -46,37 +48,36 @@ def get_full_db():
         "W": {"upper": "W", "lower": "w", "words": [("Whale", "🐋", "Big whale.", "大鯨魚。"), ("Watch", "⌚", "My watch.", "手錶。"), ("Water", "💧", "Drink water.", "水。"), ("Witch", "🧙‍♀️", "Funny witch.", "巫婆。"), ("Window", "🪟", "Close window.", "窗戶。")]},
         "X": {"upper": "X", "lower": "x", "words": [("Xylophone", "🎼", "Play xylophone.", "木琴。"), ("Box", "📦", "A box.", "盒子。"), ("Fox", "🦊", "Red fox.", "狐狸。"), ("Six", "6️⃣", "Number six.", "數字六。"), ("X-ray", "🩻", "X-ray photo.", "X光。")]},
         "Y": {"upper": "Y", "lower": "y", "words": [("Yo-yo", "🪀", "Red yo-yo.", "溜溜球。"), ("Yellow", "💛", "Bright yellow.", "黃色。"), ("Yacht", "🛥️", "White yacht.", "遊艇。"), ("Yak", "🐂", "Strong yak.", "氂牛。"), ("Yogurt", "🍦", "Eat yogurt.", "優格。")]},
-        "Z": {"upper": "Z", "lower": "z", "words": [("Zebra", "🦓", "Striped zebra.", "斑馬。"), ("Zoo", "🦁", "Go to the zoo.", "去動物園。"), ("Zero", "0️⃣", "Number zero.", "數字營。"), ("Zipper", "🤐", "Close zipper.", "拉鍊。"), ("Zigzag", "📉", "Zigzag line.", "鋸齒線。")]}
+        "Z": {"upper": "Z", "lower": "z", "words": [("Zebra", "🦓", "Striped zebra.", "斑馬。"), ("Zoo", "🦁", "Go to the zoo.", "去動物園。"), ("Zero", "0️⃣", "Number zero.", "數字零。"), ("Zipper", "🤐", "Close zipper.", "拉鍊。"), ("Zigzag", "📉", "Zigzag line.", "鋸齒線。")]}
     }
 
 DB = get_full_db()
 
-# --- 3. 側邊欄：恐龍成長與設定 ---
+# --- 3. 側邊欄 ---
 with st.sidebar:
     st.header("👤 學習者狀態")
     score = st.session_state.user_score
     st.write(f"🌟 目前積分：{score} / {MAX_SCORE}")
     st.progress(min(score / MAX_SCORE, 1.0))
     
-    # 成長邏輯：去小雞化 + 純恐龍
+    # 恐龍成長：去小雞化校正
     if score < 30:
-        d_emo, d_text, d_size, d_color = "🥚", "神祕的灰蛋", "100px", "#808080"
+        d_emo, d_text, d_size, d_color = "🥚", "沉睡的蛋", "100px", "#808080"
     elif score < 60:
-        d_emo, d_text, d_size, d_color = "🦖", "幼龍剛孵化！", "50px", "#90EE90"
+        d_emo, d_text, d_size, d_color = "🦖", "幼龍剛破殼！", "50px", "#90EE90"
     elif score < 90:
-        d_emo, d_text, d_size, d_color = "🦕", "活潑小龍", "90px", "#2E8B57"
+        d_emo, d_text, d_size, d_color = "🦕", "成長中的雷龍", "90px", "#2E8B57"
     elif score < 120:
         d_emo, d_text, d_size, d_color = "🦖", "強壯霸王龍", "130px", "#FF4500"
     else:
-        d_emo, d_text, d_size, d_color = "🐲", "終極噴火神龍！", "160px", "#B22222"
+        d_emo, d_text, d_size, d_color = "🐲", "終極神龍！", "160px", "#B22222"
 
-    st.markdown(f"<div style='text-align:center; padding:15px; border:2px solid {d_color}; border-radius:15px;'><h1 style='font-size:{d_size}; margin:0;'>{d_emo}</h1><p style='color:{d_color}; font-weight:bold; font-size:20px;'>{d_text}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align:center;'><h1 style='font-size:{d_size};'>{d_emo}</h1><p style='color:{d_color}; font-weight:bold;'>{d_text}</p></div>", unsafe_allow_html=True)
     st.divider()
-    
     user_age = st.select_slider("學生年齡", options=[4, 6, 8, 10, 12])
     target_lang = st.radio("目標語言", ["英文 (English)", "日文 (日本語)"])
     voice_speed = st.slider("語速設定", 0.5, 1.0, 0.8)
-    if st.button("🔄 積分歸零"):
+    if st.button("🔄 積分歸零 (Reset Score)"):
         st.session_state.user_score = 0
         st.rerun()
 
@@ -89,19 +90,19 @@ def get_audio_bytes(text, lang_choice, speed):
     tts.write_to_fp(fp)
     return fp.getvalue()
 
-# --- 5. 分頁 ---
+# --- 5. 功能分頁 ---
 tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字練習", "📖 萬能短文生成", "🎮 互動遊戲區", "🏆 成就紀錄"])
 
 with tab1:
-    st.header("🔤 字母與單字發音練習")
-    letter = st.selectbox("選擇字母", list(DB.keys()))
+    st.header("🔤 字母與單字練習")
+    letter = st.selectbox("請選擇字母", list(DB.keys()))
     info = DB[letter]
     with st.container():
         c1, c2 = st.columns([1, 1])
         with c1:
             st.markdown(f"""<div style="background-color: #f0f2f6; border-radius: 20px; padding: 20px; text-align: center;"><span style="font-size: 120px; font-weight: bold; color: #FF4B4B;">{info['upper']}</span> <span style="font-size: 100px; font-weight: bold; color: #1C83E1;">{info['lower']}</span></div>""", unsafe_allow_html=True)
         with c2:
-            if st.button(f"🔊 準備字母發音", key=f"btn_let_{letter}"):
+            if st.button(f"🔊 產生發音音軌"):
                 st.audio(get_audio_bytes(info['upper'], target_lang, voice_speed), format="audio/mp3")
 
     st.divider()
@@ -113,59 +114,60 @@ with tab1:
                 st.subheader(word)
                 st.write(f"**Sentence:** {sent}")
                 st.caption(f"翻譯：{tran}")
-                if st.button(f"🔊 聽發音", key=f"v_w_{word}"):
+                if st.button(f"🔊 播放單字發音", key=f"v_w_{word}"):
                     st.audio(get_audio_bytes(f"{word}. {sent}", target_lang, voice_speed), format="audio/mp3")
                     st.session_state.user_score = min(st.session_state.user_score + 1, 150)
             st.divider()
 
-# --- Tab 2: 萬能生成 (修正：強制重新生成邏輯) ---
+# --- Tab 2: 萬能短文生成 (修正：強制重新刷新邏輯) ---
 with tab2:
-    st.header("📖 萬能主題自定義生成")
-    user_topic = st.text_input("📝 請輸入任何中文或英文主題 (如：旅遊、煮飯、外星人)", "旅遊")
+    st.header("📖 萬能主題短文生成")
+    user_topic = st.text_input("📝 請輸入任何主題 (中文搜尋，如：旅遊、露營、煮飯)", "旅遊")
     
-    if st.button("🚀 生成對應教材", key="gen_btn"):
-        # 模擬即時主題對應 (這裡可以根據輸入內容動態產生)
-        en_t = user_topic if re.match(r'^[A-Za-z ]+$', user_topic) else "Trip"
-        if "煮" in user_topic or "菜" in user_topic: en_t = "Cooking"
-        if "太空" in user_topic: en_t = "Space"
-        if "恐龍" in user_topic: en_t = "Dinosaur"
+    if st.button("🚀 生成解析內容", key="gen_btn"):
+        # 強制刷新 Session State，確保舊內容被清空
+        st.session_state.story_content = None
         
-        # 依年齡「動態」產出英文內容
+        # 簡單映射
+        topic_en = "Travel" if "旅" in user_topic else user_topic
+        if "煮" in user_topic: topic_en = "Cooking"
+        if "露營" in user_topic: topic_en = "Camping"
+        
+        # 依年齡精準五階分級
         if user_age == 4:
-            txt = f"This is {en_t}. It is fun. I like {en_t}."
-            gram = "極簡單句。"
+            txt = f"The {topic_en} is fun. We go now. It is happy."
+            gram = "極簡 3-4 字句。"
         elif user_age == 6:
-            txt = f"We are having a fun {en_t} today. The {en_t} is very big. We are happy."
-            gram = "簡單形容詞運用。"
+            txt = f"I like our fun {topic_en}. It is very big. We play here every day."
+            gram = "基礎形容詞運用。"
         elif user_age == 8:
-            txt = f"I think {en_t} is very interesting. We can see many new things and play with friends."
-            gram = "助動詞 can 與 think 的運用。"
+            txt = f"This {topic_en} is a great choice for us. We can learn many things and have fun with friends."
+            gram = "助動詞 can 的運用。"
         elif user_age == 10:
-            txt = f"When we experience {en_t}, we feel very excited. My family and I always love to do this together."
+            txt = f"When we experience {topic_en}, we feel very excited. It is the best way to explore the world."
             gram = "時間副詞子句 (When...)。"
-        else:
-            txt = f"Exploring {en_t} provides us with many unique opportunities to learn about the world around us. It is truly an unforgettable journey."
-            gram = "動名詞主詞與關係子句。"
+        else: # 12歲
+            txt = f"The {topic_en} provides an incredible opportunity for everyone to explore the beauty of nature. We believe it's a memorable journey."
+            gram = "關係子句與豐富字彙。"
+        
+        # 將結果存入 Session
+        st.session_state.story_content = {"text": txt, "gram": gram, "topic": user_topic}
 
-        # 關鍵：強迫寫入 Session 狀態，避開內文不動的問題
-        st.session_state['active_story'] = txt
-        st.session_state['active_gram'] = gram
-        st.session_state['active_topic'] = user_topic
-
-    if 'active_story' in st.session_state:
-        st.subheader(f"📜 課文原文：{st.session_state['active_topic']} (English Only)")
-        for line in st.session_state['active_story'].split('.'):
+    if st.session_state.story_content:
+        s = st.session_state.story_content
+        st.subheader(f"📜 課文原文：{s['topic']} (English Only)")
+        # 鎖定結構：大字體 + 一句一行 + 純英文
+        for line in s['text'].split('.'):
             if line.strip():
                 st.markdown(f"""<div style="font-size: 32px; font-weight: 500; color: #2E4053; margin-bottom: 15px;">• {line.strip()}.</div>""", unsafe_allow_html=True)
         
         if st.button("🔊 播放全文朗讀"):
-            st.audio(get_audio_bytes(st.session_state['active_story'], target_lang, voice_speed), format="audio/mp3")
-        
-        st.success(f"**💡 文法點撥:** {st.session_state['active_gram']}")
-        with st.expander("👁️ 查看中文翻譯"):
-            st.write(f"這是關於「{st.session_state['active_topic']}」的練習。希望這段短文對你有幫助！")
+            st.audio(get_audio_bytes(s['text'], target_lang, voice_speed), format="audio/mp3")
+        st.success(f"**💡 文法點撥:** {s['gram']}")
+        with st.expander("👁️ 查看翻譯"):
+            st.write(f"這是一段關於「{s['topic']}」的練習內容。")
 
-# --- Tab 3: 遊戲區 (自動連讀換題) ---
+# --- Tab 3: 遊戲區 (自動連讀刷新) ---
 with tab3:
     st.header("🎮 聽音辨圖挑戰")
     def get_new_q():
@@ -174,15 +176,15 @@ with tab3:
         c = random.sample(pool, 3)
         return c, random.choice(c)
 
-    if f"game_q_{st.session_state.game_turn}" not in st.session_state:
+    if f"g_q_{st.session_state.game_turn}" not in st.session_state:
         q_d, q_t = get_new_q()
-        st.session_state[f"game_q_{st.session_state.game_turn}"] = q_d
-        st.session_state[f"game_t_{st.session_state.game_turn}"] = q_t
+        st.session_state[f"g_q_{st.session_state.game_turn}"] = q_d
+        st.session_state[f"g_t_{st.session_state.game_turn}"] = q_t
 
-    cur_q = st.session_state[f"game_q_{st.session_state.game_turn}"]
-    cur_t = st.session_state[f"game_t_{st.session_state.game_turn}"]
+    cur_q = st.session_state[f"g_q_{st.session_state.game_turn}"]
+    cur_t = st.session_state[f"g_t_{st.session_state.game_turn}"]
 
-    if st.button("🔊 播放題目音軌"):
+    if st.button("🔊 播放題目"):
         st.audio(get_audio_bytes(cur_t[0], target_lang, voice_speed), format="audio/mp3")
     
     cols = st.columns(3)
@@ -192,14 +194,10 @@ with tab3:
             if st.button(f"{word}", key=f"g_btn_{st.session_state.game_turn}_{i}", use_container_width=True):
                 if word == cur_t[0]:
                     st.balloons()
-                    st.success("🎉 Correct! 準備進入下一題...")
+                    st.success("🎉 Correct! 準備下一題...")
                     st.session_state.user_score += 5
                     st.session_state.game_turn += 1
-                    time.sleep(1.2)
+                    time.sleep(1)
                     st.rerun()
                 else:
-                    st.error("❌ Try again!")
-
-with tab4:
-    st.header("🏆 成就紀錄")
-    st.subheader(f"目前積分：{st.session_state.user_score} / 150")
+                    st.error("❌ 再試一次！")
