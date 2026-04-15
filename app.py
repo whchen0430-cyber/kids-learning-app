@@ -47,7 +47,7 @@ def get_full_db():
 
 DB = get_full_db()
 
-# --- 3. 側邊欄：進度、年齡、語言、語速 (結構固定) ---
+# --- 3. 側邊欄：進度、設定與歸零鍵 ---
 with st.sidebar:
     st.header("👤 學習者狀態")
     score = st.session_state.user_score
@@ -64,6 +64,12 @@ with st.sidebar:
     user_age = st.select_slider("學生年齡", options=[4, 6, 8, 10, 12])
     target_lang = st.radio("目標語言", ["英文 (English)", "日文 (日本語)"])
     voice_speed = st.slider("語速設定", 0.5, 1.0, 0.8)
+    
+    # 【新功能】積分歸零鍵
+    st.divider()
+    if st.button("🔄 積分歸零 (Reset Score)"):
+        st.session_state.user_score = 0
+        st.rerun()
 
 # --- 4. 輔助函數 ---
 def play_audio(text, lang, speed, autoplay=False):
@@ -82,7 +88,7 @@ def play_audio(text, lang, speed, autoplay=False):
         st.audio("speech.mp3")
 
 # --- 5. 四大分頁架構 (結構完全鎖定) ---
-tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母單字一體化", "📖 短文指令解析", "🎮 聽音辨圖遊戲", "🏆 成就紀錄"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母單字一體化", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
 
 # --- Tab 1: A-Z 練習 ---
 with tab1:
@@ -101,14 +107,13 @@ with tab1:
                     st.session_state.user_score = min(st.session_state.user_score + 1, MAX_SCORE)
             st.divider()
 
-# --- Tab 2: 短文解析 (完整解析回歸) ---
+# --- Tab 2: 短文解析 ---
 with tab2:
     st.header("📖 自定義短文教學解析")
     user_topic = st.text_input("📝 請輸入短文主題 (例: Park)", "Farm")
     user_inst = st.text_area("✍️ 給老師的指令", "請用簡單句型。")
     
-    if st.button("🚀 生成解析內容"):
-        # 模擬 AI 生成內容
+    if st.button("🚀 生成教材內容"):
         topic_map = {"農場": "Farm", "公園": "Park", "太空": "Space", "森林": "Forest", "海洋": "Ocean"}
         eng_topic = topic_map.get(user_topic, user_topic)
         st.session_state['story_text'] = f"The {eng_topic} is a wonderful place. We can see many friends here. We play together all day. It is a very happy day!"
@@ -117,7 +122,6 @@ with tab2:
 
     if 'story_text' in st.session_state:
         st.subheader("📜 課文原文 (Target Language)")
-        # 一句一行 + 大字體
         sentences = st.session_state['story_text'].split('.')
         for sentence in sentences:
             if sentence.strip():
@@ -126,7 +130,6 @@ with tab2:
         if st.button("🔊 全文朗讀"):
             play_audio(st.session_state['story_text'], target_lang, voice_speed, autoplay=True)
         
-        # 找回來的單字與文法區塊
         col_v, col_g = st.columns(2)
         with col_v:
             st.subheader("📝 重點單字")
@@ -139,7 +142,7 @@ with tab2:
         with st.expander("👁️ 查看中文翻譯"):
             st.write("這是一個很棒的地方。我們在這裡可以看到很多朋友。我們整天一起玩。今天真是快樂的一天！")
 
-# --- Tab 3: 遊戲區 (無限次聽題 + 靜音換題) ---
+# --- Tab 3: 遊戲區 ---
 with tab3:
     st.header("🎮 聽音辨圖挑戰")
     if 'game_data' not in st.session_state:
@@ -173,7 +176,6 @@ with tab3:
                 if word == target[0]:
                     st.session_state.user_score = min(st.session_state.user_score + 5, MAX_SCORE)
                     st.session_state.show_reward = True
-                    # 換題不設自動播放
                     all_words = []
                     for l in DB: all_words.extend(DB[l])
                     st.session_state.game_data = random.sample(all_words, 3)
