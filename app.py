@@ -11,7 +11,7 @@ if 'user_score' not in st.session_state:
     st.session_state.user_score = 0
 MAX_SCORE = 100
 
-# --- 2. A-Z 完整資料庫 ---
+# --- 2. A-Z 完整資料庫 (快取加速) ---
 @st.cache_data
 def get_full_db():
     return {
@@ -45,7 +45,7 @@ def get_full_db():
 
 DB = get_full_db()
 
-# --- 3. 側邊欄：恐龍狀態與設定 ---
+# --- 3. 側邊欄 ---
 with st.sidebar:
     st.header("👤 學習者狀態")
     score = st.session_state.user_score
@@ -75,10 +75,10 @@ def play_audio(text, lang, speed):
     st.audio("speech.mp3")
 
 # --- 5. 四大分頁架構 ---
-tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母單字練習", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母單字一體化", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
 
 with tab1:
-    st.header("🔤 字母與單字同步學")
+    st.header("🔤 字母單字學習")
     letter = st.selectbox("選擇字母", list(DB.keys()))
     for word, emoji, sent, tran in DB[letter]:
         with st.container():
@@ -94,41 +94,40 @@ with tab1:
                     st.rerun()
             st.divider()
 
-# --- Tab 2: 找回解析、單字、文法區塊 ---
 with tab2:
     st.header("📖 自定義短文教學解析")
     user_topic = st.text_input("📝 請輸入短文主題 (例: Farm, Space, Park)", "Park")
     user_inst = st.text_area("✍️ 給老師的額外指令", "請用簡單的英文描述。")
     
     if st.button("🚀 生成教材內容"):
-        # 簡易翻譯，確保原文不出現中文
         topic_map = {"農場": "Farm", "公園": "Park", "太空": "Space", "森林": "Forest", "海洋": "Ocean"}
         eng_topic = topic_map.get(user_topic, user_topic)
-        
-        st.session_state['story_text'] = f"The {eng_topic} is a wonderful place. We can see many friends and play together here. It is a happy day!"
+        st.session_state['story_text'] = f"The {eng_topic} is a wonderful place. We can see many friends here. We play together all day. It is a very happy day!"
         st.session_state['story_vocab'] = [(f"{eng_topic}", "主題名詞"), ("Wonderful", "極好的"), ("Together", "一起")]
-        st.session_state['story_gram'] = f"現在式用法：使用 'is' 來描述狀態。例如 'The {eng_topic} is wonderful'."
+        st.session_state['story_gram'] = f"現在式用法：使用 'is' 描述狀態。"
 
     if 'story_text' in st.session_state:
         st.subheader("📜 課文原文 (Target Language)")
-        st.info(st.session_state['story_text'])
+        sentences = st.session_state['story_text'].split('.')
+        for sentence in sentences:
+            if sentence.strip():
+                st.markdown(f"""<div style="font-size: 32px; font-weight: 500; line-height: 1.6; color: #2E4053; margin-bottom: 15px;">• {sentence.strip()}.</div>""", unsafe_allow_html=True)
+        
         if st.button("🔊 全文朗讀"):
             play_audio(st.session_state['story_text'], target_lang, voice_speed)
         
-        # 找回來的單字與文法解析區塊
         col_v, col_g = st.columns(2)
         with col_v:
-            st.subheader("📝 重點單字 (Vocabulary)")
-            for v, k in st.session_state['story_vocab']:
-                st.write(f"• **{v}**: {k}")
+            st.subheader("📝 重點單字")
+            for v, k in st.session_state['story_vocab']: st.write(f"• **{v}**: {k}")
         with col_g:
-            st.subheader("💡 文法點撥 (Grammar)")
+            st.subheader("💡 文法點撥")
             st.success(st.session_state['story_gram'])
             
-        with st.expander("👁️ 查看中文翻譯 (Translation)"):
-            st.write("這是翻譯區：這是一個很棒的地方。我們可以在這裡看到很多朋友並一起玩。今天真是快樂的一天！")
+        with st.expander("👁️ 查看中文翻譯"):
+            st.write("這是一個很棒的地方。我們在這裡可以看到很多朋友。我們整天一起玩。今天真是快樂的一天！")
 
-# --- Tab 3: 互動遊戲區 ---
+# --- 核心改動：純淨遊戲挑戰（移除中文翻譯） ---
 with tab3:
     st.header("🎮 聽音辨圖挑戰")
     if 'game_data' not in st.session_state or st.button("🔄 換一題"):
@@ -145,18 +144,21 @@ with tab3:
     if st.button("🔊 播放挑戰音檔"):
         play_audio(target[0] if mode == "word" else target[2], target_lang, voice_speed)
 
+    st.write("---")
     cols = st.columns(3)
     for i, (word, emoji, sent, tran) in enumerate(st.session_state.game_data):
         with cols[i]:
+            # 視覺大圖
             st.markdown(f"<h1 style='text-align:center; font-size:150px;'>{emoji}</h1>", unsafe_allow_html=True)
-            if st.button(f"這是 {word} 嗎?", key=f"g_{i}", use_container_width=True):
+            # 【關鍵優化】按鍵上只呈現原文單字，移除所有中文提示
+            if st.button(f"{word}", key=f"g_{i}", use_container_width=True):
                 if word == target[0]:
                     st.balloons()
-                    st.success("✅ 答對了！積分 +5")
+                    st.success("✅ Correct! +5")
                     st.session_state.user_score = min(st.session_state.user_score + 5, MAX_SCORE)
                     st.rerun()
                 else:
-                    st.error("❌ 錯了，再試一次！")
+                    st.error("❌ Try again!")
 
 with tab4:
     st.header("🏆 成就紀錄")
