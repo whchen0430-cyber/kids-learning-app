@@ -7,7 +7,6 @@ import random
 # --- 1. 頁面配置與積分系統 ---
 st.set_page_config(page_title="恐龍語文冒險樂園", page_icon="🦖", layout="wide")
 
-# 初始化積分，設定滿分為 100
 if 'user_score' not in st.session_state:
     st.session_state.user_score = 0
 MAX_SCORE = 100
@@ -17,7 +16,7 @@ MAX_SCORE = 100
 def get_full_db():
     return {
         "A": [("Apple", "🍎", "I like the red apple.", "我喜歡紅蘋果。"), ("Ant", "🐜", "The ant is small.", "螞蟻很小。"), ("Axe", "🪓", "Be careful.", "要小心。"), ("Alligator", "🐊", "Big alligator.", "大鱷魚。"), ("Airplane", "✈️", "Fast airplane.", "快飛機。")],
-        "B": [("Bear", "🧸", "A brown bear.", "一隻棕熊。"), ("Ball", "⚽", "I kick the ball.", "我踢球。"), ("Banana", "🍌", "Yellow banana.", "黃香蕉。"), ("Bird", "🐦", "The bird sings.", "鳥在唱歌。"), ("Bee", "🐝", "The bee makes honey.", "蜜蜂造蜜。")],
+        "B": [("Bear", "🧸", "A brown bear.", "一隻棕熊。"), ("Ball", "⚽", "I kick the ball.", "我踢球。"), ("Banana", "🍌", "Yellow banana.", "香蕉。"), ("Bird", "🐦", "The bird sings.", "鳥在唱歌。"), ("Bee", "🐝", "The bee makes honey.", "蜜蜂造蜜。")],
         "C": [("Cat", "🐱", "The cat is cute.", "貓很可愛。"), ("Cake", "🎂", "Happy birthday cake.", "生日蛋糕。"), ("Car", "🚗", "A fast car.", "快車。"), ("Cup", "🥛", "A cup of milk.", "一杯牛奶。"), ("Candy", "🍬", "Sweet candy.", "甜糖果。")],
         "D": [("Dog", "🐶", "Good doggy.", "好狗狗。"), ("Duck", "🦆", "The duck swims.", "鴨子游泳。"), ("Dolphin", "🐬", "Smart dolphin.", "聰明海豚。"), ("Drum", "🥁", "Play the drum.", "打鼓。"), ("Door", "🚪", "Open the door.", "開門。")],
         "E": [("Elephant", "🐘", "Big elephant.", "大象很大。"), ("Egg", "🥚", "I eat an egg.", "我吃蛋。"), ("Eagle", "🦅", "The eagle flies.", "老鷹飛。"), ("Eye", "👁️", "Open your eyes.", "張開眼睛。"), ("Ear", "👂", "I hear music.", "我聽見音樂。")],
@@ -38,7 +37,7 @@ def get_full_db():
         "T": [("Tiger", "🐯", "Strong tiger.", "老虎。"), ("Tree", "🌳", "Tall tree.", "大樹。"), ("Train", "🚆", "Long train.", "長火車。"), ("Tomato", "🍅", "Red tomato.", "紅番茄。"), ("Telephone", "☎️", "Call me.", "打給我。")],
         "U": [("Umbrella", "🌂", "My umbrella.", "我的雨傘。"), ("Unicorn", "🦄", "Magic unicorn.", "獨角獸。"), ("Up", "⬆️", "Go up.", "向上。"), ("Under", "👇", "Down there.", "在下面。"), ("Uniform", "🥋", "School uniform.", "制服。")],
         "V": [("Van", "🚐", "Drive a van.", "箱型車。"), ("Violin", "🎻", "Play violin.", "小提琴。"), ("Vase", "🏺", "Pretty vase.", "花瓶。"), ("Vegetable", "🥦", "Healthy vegetables.", "健康蔬菜。"), ("Volcano", "🌋", "Hot volcano.", "火山。")],
-        "W": [("Whale", "🐋", "Big whale.", "大鯨魚。"), ("Watch", "⌚", "My watch.", "手錶。"), ("Water", "💧", "Drink water.", "喝水。"), ("Witch", "🧙‍♀️", "Funny witch.", "巫婆。"), ("Window", "🪟", "Close window.", "關窗。")],
+        "W": [("Whale", "🐋", "Big whale.", "大鯨魚。"), ("Watch", "⌚", "My watch.", "手錶。"), ("Water", "💧", "Drink water.", "水。"), ("Witch", "🧙‍♀️", "Funny witch.", "巫婆。"), ("Window", "🪟", "Close window.", "關窗。")],
         "X": [("Xylophone", "🎼", "Play xylophone.", "木琴。"), ("Box", "📦", "A box.", "盒子。"), ("Fox", "🦊", "Red fox.", "狐狸。"), ("Six", "6️⃣", "Number six.", "數字六。"), ("X-ray", "🩻", "X-ray photo.", "X光。")],
         "Y": [("Yo-yo", "🪀", "Red yo-yo.", "溜溜球。"), ("Yellow", "💛", "Bright yellow.", "亮黃色。"), ("Yacht", "🛥️", "White yacht.", "遊艇。"), ("Yak", "🐂", "Strong yak.", "氂牛。"), ("Yogurt", "🍦", "Eat yogurt.", "優格。")],
         "Z": [("Zebra", "🦓", "Striped zebra.", "斑馬。"), ("Zoo", "🦁", "Go to the zoo.", "去動物園。"), ("Zero", "0️⃣", "Number zero.", "數字零。"), ("Zipper", "🤐", "Close zipper.", "拉鍊。"), ("Zigzag", "📉", "Zigzag line.", "鋸齒線。")]
@@ -50,99 +49,8 @@ DB = get_full_db()
 with st.sidebar:
     st.header("👤 學習者狀態")
     score = st.session_state.user_score
-    # 積分視覺進度條 (滿分 100)
-    st.write(f"🌟 積分進度：{score} / {MAX_SCORE}")
+    st.write(f"🌟 積分：{score} / {MAX_SCORE}")
     st.progress(min(score / MAX_SCORE, 1.0))
     
     if score < 30: d_emo, d_name = "🥚", "恐龍蛋"
-    elif score < 70: d_emo, d_name = "🦖", "小恐龍"
-    else: d_emo, d_name = "🦕", "超級巨龍"
-    
-    st.markdown(f"<h1 style='text-align:center; font-size:100px;'>{d_emo}</h1>", unsafe_allow_html=True)
-    st.title(f"等級：{d_name}")
-    st.divider()
-    user_age = st.select_slider("學生年齡", options=[4, 6, 8, 10, 12])
-    target_lang = st.radio("目標語言", ["英文 (English)", "日文 (日本語)"])
-    voice_speed = st.slider("語速設定", 0.5, 1.0, 0.8)
-
-# --- 4. 輔助函數 ---
-def play_audio(text, lang, speed):
-    clean = re.sub(r'[\u4e00-\u9fa5]', '', text)
-    l_code = 'en' if "英" in lang else 'ja'
-    tts = gTTS(text=clean, lang=l_code, slow=(speed < 1.0))
-    tts.save("speech.mp3")
-    st.audio("speech.mp3")
-
-# --- 5. 四大分頁 ---
-tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母單字一體化", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
-
-with tab1:
-    st.header("🔤 字母單字學習")
-    letter = st.selectbox("選擇字母", list(DB.keys()))
-    for word, emoji, sent, tran in DB[letter]:
-        with st.container():
-            c1, c2 = st.columns([1, 4])
-            c1.markdown(f"<h1 style='font-size:80px;'>{emoji}</h1>", unsafe_allow_html=True)
-            c2.subheader(word)
-            c2.write(f"{sent} ({tran})")
-            if c2.button(f"🔊 聽發音", key=f"v_{word}"):
-                play_audio(f"{word}. {sent}", target_lang, voice_speed)
-                st.session_state.user_score = min(st.session_state.user_score + 1, MAX_SCORE)
-                st.rerun()
-
-with tab2:
-    st.header("📖 短文指令解析")
-    user_topic = st.text_input("輸入主題", "Zoo")
-    if st.button("🚀 生成短文"):
-        st.session_state['story'] = f"Look! There are many animals in the {user_topic}. I like the animals."
-    if 'story' in st.session_state:
-        st.info(st.session_state['story'])
-        if st.button("🔊 播放音檔"):
-            play_audio(st.session_state['story'], target_lang, voice_speed)
-
-# --- 核心改動：多樣化遊戲區 ---
-with tab3:
-    st.header("🎮 聽音辨圖挑戰 (混合模式)")
-    
-    # 點擊按鈕重置題目：從全資料庫隨機抽樣
-    if 'game_data' not in st.session_state or st.button("🔄 換一組新挑戰"):
-        # 從 A-Z 所有單字中抽出三個不重複的單字
-        all_words = []
-        for l in DB: all_words.extend(DB[l])
-        st.session_state.game_data = random.sample(all_words, 3)
-        st.session_state.game_target = random.choice(st.session_state.game_data)
-        # 隨機決定考「單字」還是「句子」
-        st.session_state.game_mode = random.choice(["word", "sentence"])
-
-    opts = st.session_state.game_data
-    target = st.session_state.game_target
-    mode = st.session_state.game_mode
-
-    st.subheader(f"🎯 挑戰目標：{'聽單字辨圖' if mode == 'word' else '聽句子辨圖'}")
-    
-    if st.button("🔊 播放挑戰音檔"):
-        # 根據模式播放不同內容
-        audio_text = target[0] if mode == "word" else target[2]
-        play_audio(audio_text, target_lang, voice_speed)
-
-    st.write("---")
-    cols = st.columns(3)
-    for i, (word, emoji, sent, tran) in enumerate(opts):
-        with cols[i]:
-            st.markdown(f"<h1 style='text-align:center; font-size:150px;'>{emoji}</h1>", unsafe_allow_html=True)
-            # 答對給 5 分
-            if st.button(f"這就是 {word} 嗎?", key=f"g_{i}", use_container_width=True):
-                if word == target[0]:
-                    st.balloons()
-                    st.success("✅ 答對了！積分 +5")
-                    st.session_state.user_score = min(st.session_state.user_score + 5, MAX_SCORE)
-                    st.rerun()
-                else:
-                    st.error("❌ 不對喔，再試一次！")
-
-with tab4:
-    st.header("🏆 成就紀錄")
-    st.subheader(f"目前積分：{score} / 100")
-    if score >= MAX_SCORE:
-        st.balloons()
-        st.success("
+    elif score < 70:
