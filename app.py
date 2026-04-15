@@ -4,164 +4,146 @@ import os
 import re
 import streamlit.components.v1 as components
 
-# --- 頁面配置與可愛風 CSS ---
-st.set_page_config(page_title="小天才語文樂園", page_icon="🧸", layout="wide")
+# --- 頁面配置 ---
+st.set_page_config(page_title="專業語文學習機器人", page_icon="🎓", layout="wide")
 
-st.markdown("""
-    <style>
-    .main { background-color: #FFFDF5; }
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
-    .stTabs [aria-selected="true"] { background-color: #FFB6C1 !important; color: white !important; }
-    /* 大型 Emoji 單字卡樣式 */
-    .big-emoji { font-size: 150px; text-align: center; margin-top: -30px; margin-bottom: 10px; }
-    /* 短文卡片樣式 */
-    .article-box { 
-        background: white; 
-        padding: 30px; 
-        border-radius: 25px; 
-        box-shadow: 5px 5px 15px rgba(0,0,0,0.05);
-        border-top: 8px solid #FFB6C1;
+# --- 1. 核心教材資料庫 (依年齡與類別設計) ---
+# 單字與圖片關鍵字對應表 (類別化)
+VOCAB_DB = {
+    "動物 (Animals)": {
+        "easy": [("Dog", "🐶"), ("Cat", "🐱"), ("Bird", "🐦")],
+        "medium": [("Elephant", "🐘"), ("Giraffe", "🦒"), ("Lion", "🦁")],
+        "hard": [("Chameleon", "🦎"), ("Platypus", "🦆"), ("Kangaroo", "🦘")]
+    },
+    "食物 (Food)": {
+        "easy": [("Apple", "🍎"), ("Milk", "🥛"), ("Cake", "🍰")],
+        "medium": [("Sandwich", "🥪"), ("Broccoli", "🥦"), ("Spaghetti", "🍝")],
+        "hard": [("Ingredients", "🧂"), ("Nutrition", "🥗"), ("Delicacy", "🍽️")]
     }
-    .topic-emoji { font-size: 50px; margin-bottom: 10px; text-align: center; }
-    </style>
-    """, unsafe_allow_html=True)
+}
 
-st.title("🧸 小天才安全學習樂園 🤖")
-
-# --- 側邊欄設定 ---
-with st.sidebar:
-    st.header("⚙️ 教學設定")
-    lang_choice = st.radio("目標語言", ["英文 (English)", "日文 (日本語)"])
-    voice_speed = st.slider("語速 (建議 0.8)", 0.5, 1.0, 0.8)
-    st.write("---")
-    st.caption("100% 安全 Emoji 視覺教材 🌱")
-
-# --- 通用語音函數 ---
-def play_audio(text, lang):
+# --- 2. 輔助函數 ---
+def play_audio(text, lang, speed=0.8):
+    # 清理非目標語系文字
     clean_text = re.sub(r'[\u4e00-\u9fa5]', '', text).replace("A:", "").replace("B:", "")
     lang_code = 'en' if "英" in lang else 'ja'
-    tts = gTTS(text=clean_text, lang=lang_code, slow=True)
+    tts = gTTS(text=clean_text, lang=lang_code, slow=(speed < 1.0))
     tts.save("speech.mp3")
     with open("speech.mp3", "rb") as f:
         st.audio(f.read(), format="audio/mp3")
 
-# 【關鍵修正】建立完全可控的內建 Emoji 對應表，確保絕對圖文相符
-# 這裡我們手動輸入最適合幼兒的單字與 Emoji
-safe_visual_db = {
-    # 發音練習用 (A-J)
-    "Apple": "🍎", "Bear": "🧸", "Cat": "🐱", "Dog": "🐶", "Elephant": "🐘",
-    "Fish": "🐟", "Goat": "🐐", "Hat": "🎩", "Igloo": "🛖", "Jam": "🍯",
-    "Ant": "🐜",
+def get_stable_img(keyword):
+    # 加上可愛與插畫標籤，避免嚇到小孩
+    return f"https://loremflickr.com/800/600/{keyword},illustration,cute,cartoon/all"
+
+# --- 3. 側邊欄設定 (年齡與語系) ---
+with st.sidebar:
+    st.header("⚙️ 教學參數設定")
+    target_lang = st.radio("目標學習語言", ["英文 (English)", "日文 (日本語)"])
+    user_age = st.select_slider("學生年齡", options=[4, 6, 8, 10, 12])
     
-    # 單字卡與短文常用主題用 (英中日通用關鍵字)
-    "公園": "🌳", "Picnic": "🧺", "Picnic": "🧺",
-    "水果": "🍎", "Fruits": "🍎", "くだもの": "🍎",
-    "動物": "🐱", "Animals": "🐱", "どうぶつ": "🐱",
-    "晴天": "☀️", "Sunny Day": "☀️", "はれ": "☀️",
-    "海洋": "🌊", "Ocean": "🌊", "うみ": "🌊",
-    "貓咪": "🐱", "Cat": "🐱", "ねこ": "🐱",
-    "小狗": "🐶", "Dog": "🐶", "いぬ": "🐶",
-    "汽車": "🚗", "Car": "🚗", "くるま": "🚗",
-    "星星": "⭐", "Star": "⭐", "ほし": "⭐"
-}
+    # 判定難度等級
+    if user_age <= 6: level = "easy"
+    elif user_age <= 10: level = "medium"
+    else: level = "hard"
+    
+    st.write(f"📊 目前難度：**Level {level.upper()}**")
+    voice_speed = st.slider("調整語速", 0.5, 1.0, 0.8)
 
-# 輔助函數：根據輸入找出對應 Emoji，找不到就給星號
-def get_safe_visual(keyword):
-    return safe_visual_db.get(keyword, "⭐")
+# --- 4. 功能分頁 ---
+tab1, tab2, tab3, tab4 = st.tabs(["🔤 專業發音", "🖼️ 單字類別", "📖 程度短文", "🎮 互動遊戲"])
 
-# --- 功能分頁 ---
-tab1, tab2, tab3, tab4 = st.tabs(["🔤 發音練習", "🖼️ 單字卡", "📖 短文閱讀", "🎮 遊戲區"])
-
-# --- 1. 發音練習 (使用內建絕對安全 Emoji) ---
+# --- Tab 1: 專業發音練習 ---
 with tab1:
-    st.header("🔤 Phonics 自然發音啟蒙")
-    # 我們只列出我們在 safe_visual_db 中定義好安全視覺的字母
-    active_letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
-    letter = st.selectbox("請選擇一個字母開始：", active_letters)
-    
-    phonics_map = {
-        "A": "Apple", "B": "Bear", "C": "Cat", "D": "Dog", "E": "Elephant",
-        "F": "Fish", "G": "Goat", "H": "Hat", "I": "Igloo", "J": "Jam"
+    st.header("🔤 Phonics & IPA 專業發音練習")
+    letter = st.selectbox("選擇練習字母", list("ABCDEFGHIJ"))
+    phonics_info = {
+        "A": {"word": "Apple", "ipa": "/æ/", "tip": "嘴巴張大，舌頭放平"},
+        "B": {"word": "Bear", "ipa": "/b/", "tip": "雙唇緊閉，突然噴氣"},
+        "C": {"word": "Cat", "ipa": "/k/", "tip": "舌根抬起，快速吐氣"}
     }
-    word = phonics_map.get(letter)
+    info = phonics_info.get(letter, {"word": "Ant", "ipa": "/æ/", "tip": "基礎練習"})
     
-    # 這裡顯示絕對可愛的泰迪熊 🧸，而不是可怕的真實灰熊照片
-    st.markdown(f"<div class='big-emoji'>{get_safe_visual(word)}</div>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.markdown(f"## 字母：{letter}")
-        st.subheader(f"發音：{letter}, {letter}, {word}")
-    with col2:
-        if st.button(f"🔊 播放 {letter} 發音", key="voice1"):
-            play_audio(f"{letter}, {letter}, {word}", lang_choice)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.image(get_stable_img(info['word']), use_column_width=True)
+    with c2:
+        st.title(f"Letter: {letter}")
+        st.markdown(f"### **IPA 音標：{info['ipa']}**")
+        st.info(f"💡 發音秘訣：{info['tip']}")
+        if st.button(f"🔊 播放專業發音 ({letter})"):
+            play_audio(f"{letter}, {letter}, {info['word']}", target_lang)
 
-# --- 2. 圖片與單字 (使用內建絕對安全 Emoji) ---
+# --- Tab 2: 類別化單字卡 ---
 with tab2:
-    st.header("🖼️ 閃視單字記憶卡")
-    # 這裡我們列出所有已定義好 Emoji 的單字，讓孩子從中選擇，避免自由輸入導致圖文不符
-    safe_words = ["蘋果", "貓咪", "小狗", "汽車", "星星", "動物", "水果"]
-    word_input = st.selectbox("選擇想學習的單字主題：", safe_words)
+    st.header("🖼️ 分類閃視卡")
+    category = st.selectbox("選擇主題類別", list(VOCAB_DB.keys()))
+    words_to_show = VOCAB_DB[category][level]
     
-    if word_input:
-        st.markdown(f"<div class='big-emoji'>{get_safe_visual(word_input)}</div>", unsafe_allow_html=True)
-        
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.title(f"{word_input}")
-        with col2:
-            # 將中日文轉為英日文發音用關鍵字
-            voice_map = {"蘋果": "Apple", "貓咪": "Cat", "小狗": "Dog", "汽車": "Car", "星星": "Star", "動物": "Animals", "水果": "Fruits"}
-            if st.button(f"🔊 聽發音", key="voice2"):
-                play_audio(voice_map[word_input], lang_choice)
+    # 依難度調整顯示數量
+    cols = st.columns(len(words_to_show))
+    for i, (w, emoji) in enumerate(words_to_show):
+        with cols[i]:
+            st.markdown(f"<h1 style='text-align:center;'>{emoji}</h1>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center;'><b>{w}</b></p>", unsafe_allow_html=True)
+            if st.button(f"🔊", key=f"v_{w}"):
+                play_audio(w, target_lang)
 
-# --- 3. 短文閱讀 (敘事格式) ---
+# --- Tab 3: 程度短文 (依年齡生成) ---
 with tab3:
-    st.header("📖 情境小短文閱讀")
-    # 教材主題也要選擇內建的，確保圖片相符
-    story_topic_safe = st.selectbox("輸入短文主題：", ["晴天", "海洋", "動物"])
+    st.header(f"📖 {user_age}歲 專屬短文閱讀")
+    story_topic = st.text_input("輸入短文主題：", "森林")
     
-    if st.button("✨ 生成圖文短文", key="voice3"):
-        # 顯示主題大 Emoji，保證圖文相符
-        st.markdown(f"<div class='topic-emoji'>{get_safe_visual(story_topic_safe)}</div>", unsafe_allow_html=True)
-        
-        # 模擬小短文 (非對話式)
-        if "日" in lang_choice:
-            story_text = f"お日様がキラキラしています。空は青くて、とてもきれいです。外で遊びましょう！楽しいですよ。"
-            trans = "太陽閃閃發光。天空藍藍的，非常漂亮。在外面玩耍吧！非常開心喔。"
-        else:
-            story_text = f"The sun is shining bright in the big blue sky. It is a beautiful day. Let's play outside! It is fun."
-            trans = "太陽在藍藍的大天空中閃閃發光。今天天氣很好。在外面玩耍吧！非常開心。"
+    # 依年齡調整句型難度
+    if user_age <= 6:
+        story = f"Look! A {story_topic}. It is big. I like the {story_topic}."
+        trans = f"看！這是一個{story_topic}。它很大。我喜歡這個{story_topic}。"
+    elif user_age <= 10:
+        story = f"Today we went to the {story_topic}. The weather was beautiful. We saw many interesting things there."
+        trans = f"今天我們去了{story_topic}。天氣很漂亮。我們在那裡看到了許多有趣的事情。"
+    else:
+        story = f"Exploring the {story_topic} provides a unique opportunity to understand nature. We should protect our environment for the future."
+        trans = f"探索{story_topic}提供了一個了解自然的獨特機會。我們應該為了未來保護我們的環境。"
 
-        st.markdown(f"<div class='article-box'><h3>{story_text}</h3><hr><p style='color:gray;'>{trans}</p></div>", unsafe_allow_html=True)
-        play_audio(story_text, lang_choice)
+    st.image(get_stable_img(story_topic), width=500)
+    st.markdown(f"**{story}**")
+    st.caption(trans)
+    if st.button("🔊 播放全文內容"):
+        play_audio(story, target_lang)
 
-# --- 4. 遊戲區 ---
+# --- Tab 4: 互動遊戲 (語言隨動) ---
 with tab4:
-    st.header("🎮 互動驗收區")
-    game_html = """
-    <div style="background:#FFFDF5; padding:20px; border-radius:20px; text-align:center; border:3px solid #FFB6C1;">
-        <h3>🔔 指令：點選 4 個星星！</h3>
-        <div style="font-size:70px; margin:20px;">
-            <span onclick="check(this)" style="cursor:pointer; margin:5px; display:inline-block;">⭐</span>
-            <span onclick="check(this)" style="cursor:pointer; margin:5px; display:inline-block;">⭐</span>
-            <span onclick="check(this)" style="cursor:pointer; margin:5px; display:inline-block;">⭐</span>
-            <span onclick="check(this)" style="cursor:pointer; margin:5px; display:inline-block;">⭐</span>
-            <span onclick="check(this)" style="cursor:pointer; margin:5px; display:inline-block;">⭐</span>
-            <span onclick="check(this)" style="cursor:pointer; margin:5px; display:inline-block;">⭐</span>
+    st.header("🎮 語言互動挑戰")
+    
+    # 依語言切換指令
+    game_instr = {
+        "英文 (English)": {"title": "Listen & Click", "task": "Click on 4 stars!", "success": "Amazing! You got it!"},
+        "日文 (日本語)": {"title": "きいて、クリックして", "task": "ほしを 4つ おしてね！", "success": "すごい！せいかいです！"}
+    }
+    curr_instr = game_instr[target_lang]
+    
+    game_html = f"""
+    <div style="background:white; padding:20px; border-radius:20px; text-align:center; border:4px solid #87CEFA;">
+        <h2>{curr_instr['title']}</h2>
+        <p style="font-size:20px;">{curr_instr['task']}</p>
+        <div style="font-size:60px;">
+            <span onclick="check(this)" style="cursor:pointer">⭐</span>
+            <span onclick="check(this)" style="cursor:pointer">⭐</span>
+            <span onclick="check(this)" style="cursor:pointer">⭐</span>
+            <span onclick="check(this)" style="cursor:pointer">⭐</span>
+            <span onclick="check(this)" style="cursor:pointer">⭐</span>
+            <span onclick="check(this)" style="cursor:pointer">⭐</span>
         </div>
-        <h2 id="msg" style="color:#FF69B4;"></h2>
-        <button onclick="location.reload()" style="padding:10px; border-radius:10px;">重新挑戰</button>
+        <h2 id="msg" style="color:#4CAF50;"></h2>
     </div>
     <script>
-        let score = 0;
-        function check(el) {
+        let count = 0;
+        function check(el) {{
             if(el.style.opacity == '0.2') return;
-            el.style.opacity = '0.2'; // 點擊後變透明
-            score++;
-            if(score == 4) document.getElementById('msg').innerText = "🎉 答對了！Good job!";
-            if(score > 4) document.getElementById('msg').innerText = "❌ 點太多囉，再試一次！";
-        }
+            el.style.opacity = '0.2';
+            count++;
+            if(count == 4) document.getElementById('msg').innerText = "{curr_instr['success']}";
+        }}
     </script>
     """
-    components.html(game_html, height=450)
+    components.html(game_html, height=400)
