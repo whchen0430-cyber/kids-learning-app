@@ -14,7 +14,7 @@ if 'user_score' not in st.session_state:
     st.session_state.user_score = 0
 MAX_SCORE = 100
 
-# --- 2. A-Z 完整資料庫 (只保留字母與單字例句) ---
+# --- 2. A-Z 完整資料庫 (鎖定 26 字母) ---
 @st.cache_data
 def get_full_db():
     return {
@@ -60,52 +60,53 @@ with st.sidebar:
     user_age = st.select_slider("學生年齡", options=[4, 6, 8, 10, 12])
     target_lang = st.radio("目標語言", ["英文 (English)", "日文 (日本語)"])
     voice_speed = st.slider("語速設定", 0.5, 1.0, 0.8)
-    st.divider()
-    if st.button("🔄 積分歸零 (Reset Score)"):
+    if st.button("🔄 積分歸零 (Reset)"):
         st.session_state.user_score = 0
         st.rerun()
 
-# --- 4. 輔助函數 (強制重新整理播放器，達成無限重複點擊) ---
+# --- 4. 核心輔助函數 (JS 注入解決重複播放與跑不出來的問題) ---
 def play_audio(text, lang, speed):
     clean = re.sub(r'[\u4e00-\u9fa5]', '', text)
     l_code = 'en' if "英" in lang else 'ja'
     tts = gTTS(text=clean, lang=l_code, slow=(speed < 1.0))
     
-    # 使用微秒級時間戳記，確保每一次生成的音檔 ID 都不同，瀏覽器才會更新
     unique_id = datetime.now().strftime('%H%M%S%f')
-    filename = f"voice_{unique_id}.mp3"
+    filename = f"v_{unique_id}.mp3"
     tts.save(filename)
     
     with open(filename, "rb") as f:
         data = f.read()
         b64 = base64.b64encode(data).decode()
-        # 關鍵：這裡的 id="aud_{unique_id}" 迫使 HTML 重新讀取音訊串流
-        st.markdown(f"""
-            <audio autoplay="true" id="aud_{unique_id}">
-            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+        # 使用 JavaScript 強制重啟音訊物件
+        audio_html = f"""
+            <audio id="audio_{unique_id}">
+                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
             </audio>
-            """, unsafe_allow_html=True)
+            <script>
+                var audio = document.getElementById("audio_{unique_id}");
+                audio.play();
+            </script>
+        """
+        st.components.v1.html(audio_html, height=0)
 
-# --- 5. 功能分頁架構 (結構完全鎖定) ---
-tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字練習", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
+# --- 5. 功能分頁 (架構封存) ---
+tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字發音", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
 
 with tab1:
     st.header("🔤 字母與單字發音練習")
-    letter = st.selectbox("請選擇字母 (A-Z)", list(DB.keys()))
+    letter = st.selectbox("請選擇字母", list(DB.keys()))
     info = DB[letter]
-    
     with st.container():
         c1, c2 = st.columns([1, 1])
         with c1:
             st.markdown(f"""<div style="background-color: #f0f2f6; border-radius: 20px; padding: 20px; text-align: center;"><span style="font-size: 120px; font-weight: bold; color: #FF4B4B;">{info['upper']}</span> <span style="font-size: 100px; font-weight: bold; color: #1C83E1;">{info['lower']}</span></div>""", unsafe_allow_html=True)
         with c2:
-            st.write("### 🔊 重複點擊測試")
-            if st.button(f"🗣️ 聽字母音: {info['upper']}", key="v_name"):
+            if st.button(f"🔊 聽字母名: {info['upper']}", key="v_letter_main"):
                 play_audio(info['upper'], target_lang, voice_speed)
-            st.info("若聽不到聲音，請檢查瀏覽器是否封鎖了自動播放音訊。")
+            st.info("若無聲音，請點擊按鈕重試（支援無限重複播放）")
 
     st.divider()
-    st.subheader(f"✨ 字母 {letter} 代表單字 (支援無限重複播放)")
+    st.subheader(f"✨ {letter} 代表單字練習")
     for word, emoji, sent, tran in info["words"][:(3 if user_age <= 6 else 5)]:
         with st.container():
             col1, col2 = st.columns([1, 4])
@@ -114,28 +115,26 @@ with tab1:
                 st.subheader(word)
                 st.write(f"**Sentence:** {sent}")
                 st.caption(f"翻譯：{tran}")
-                if st.button(f"🔊 聽發音", key=f"v_{word}_{datetime.now().microsecond}"):
+                # 每個按鈕配上動態 Key 確保重複點擊不衝突
+                if st.button(f"🔊 聽單字發音", key=f"v_{word}_{unique_id}"):
                     play_audio(f"{word}. {sent}", target_lang, voice_speed)
                     st.session_state.user_score = min(st.session_state.user_score + 1, MAX_SCORE)
             st.divider()
 
 with tab2:
-    st.header("📖 自定義短文教學解析")
-    user_topic = st.text_input("📝 主題", "Farm")
-    if st.button("🚀 生成解析"):
-        st.session_state['story_text'] = f"The {user_topic} is big. We see friends here. We play all day. It is a happy day!"
+    st.header("📖 短文教學解析")
+    user_topic = st.text_input("📝 主題", "Park")
+    if st.button("🚀 生成教材內容"):
+        st.session_state['story_text'] = f"The {user_topic} is very beautiful. We can see many friends and play all day. It is a very happy day!"
         st.session_state['story_vocab'] = [(f"{user_topic}", "主題"), ("Happy", "快樂")]
-        st.session_state['story_gram'] = "使用 'is' 描述狀態。"
-    
+        st.session_state['story_gram'] = f"使用 'is' 描述狀態。"
     if 'story_text' in st.session_state:
         st.subheader("📜 課文原文")
-        # 一句一行 + 大字體
-        for sentence in st.session_state['story_text'].split('.'):
-            if sentence.strip():
-                st.markdown(f"""<div style="font-size: 32px; font-weight: 500; line-height: 1.6; color: #2E4053; margin-bottom: 15px;">• {sentence.strip()}.</div>""", unsafe_allow_html=True)
-        if st.button("🔊 全文朗讀"):
+        for s in st.session_state['story_text'].split('.'):
+            if s.strip():
+                st.markdown(f"""<div style="font-size: 32px; font-weight: 500; line-height: 1.6; color: #2E4053; margin-bottom: 15px;">• {s.strip()}.</div>""", unsafe_allow_html=True)
+        if st.button("🔊 全文朗讀", key="v_story_full"):
             play_audio(st.session_state['story_text'], target_lang, voice_speed)
-        
         cv, cg = st.columns(2)
         with cv:
             st.subheader("📝 重點單字")
@@ -143,7 +142,7 @@ with tab2:
         with cg:
             st.subheader("💡 文法點撥")
             st.success(st.session_state['story_gram'])
-        with st.expander("👁️ 查看翻譯"): st.write("這是一個很棒的地方。我們在這裡可以看到很多朋友。我們整天一起玩。今天真是快樂的一天！")
+        with st.expander("👁️ 查看翻譯"): st.write("這是翻譯區內容。這是一個很棒的地方，我們可以看到很多朋友。今天真是快樂的一天。")
 
 with tab3:
     st.header("🎮 聽音辨圖挑戰")
@@ -159,7 +158,7 @@ with tab3:
         st.markdown("""<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;"><h1 style="font-size: 150px; margin: 0;">🌟</h1><h2 style="font-size: 60px; color: #FFD700;">Amazing!</h2></div>""", unsafe_allow_html=True)
         st.balloons(); time.sleep(1.5); st.session_state.show_reward = False; st.rerun()
 
-    if st.button("🔊 播放題目音檔"):
+    if st.button("🔊 播放題目", key="v_game_q"):
         play_audio(target[0], target_lang, voice_speed)
     
     cols = st.columns(3)
