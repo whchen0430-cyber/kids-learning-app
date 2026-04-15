@@ -14,11 +14,11 @@ if 'user_score' not in st.session_state:
     st.session_state.user_score = 0
 MAX_SCORE = 100
 
-# --- 2. A-Z 完整資料庫 (鎖定 26 字母) ---
+# --- 2. A-Z 完整資料庫 (26 字母) ---
 @st.cache_data
 def get_full_db():
     return {
-        "A": {"upper": "A", "lower": "a", "words": [("Apple", "🍎", "I like the red apple.", "我喜歡紅蘋果。"), ("Ant", "🐜", "The ant is small.", "螞蟻很小。"), ("Astronaut", "👨‍🚀", "Sky hero.", "太空英雄。"), ("Alligator", "🐊", "Big alligator.", "大鱷魚。"), ("Airplane", "✈️", "Fast airplane.", "快飛機。")]},
+        "A": {"upper": "A", "lower": "a", "words": [("Apple", "🍎", "I like the red apple.", "我喜歡紅蘋果。"), ("Ant", "🐜", "The ant is small.", "螞蟻很小。"), ("Astronaut", "👨‍🚀", "The astronaut flies.", "太空人飛翔。"), ("Alligator", "🐊", "Big alligator.", "大鱷魚。"), ("Airplane", "✈️", "Fast airplane.", "快飛機。")]},
         "B": {"upper": "B", "lower": "b", "words": [("Bear", "🧸", "A brown bear.", "一隻棕熊。"), ("Ball", "⚽", "I kick the ball.", "我踢球。"), ("Banana", "🍌", "Yellow banana.", "黃香蕉。"), ("Bird", "🐦", "The bird sings.", "鳥在唱歌。"), ("Bee", "🐝", "The bee makes honey.", "忙碌的蜜蜂。")]},
         "C": {"upper": "C", "lower": "c", "words": [("Cat", "🐱", "The cat is cute.", "貓很可愛。"), ("Cake", "🎂", "Happy birthday cake.", "生日蛋糕。"), ("Car", "🚗", "A fast car.", "快車。"), ("Cup", "🥛", "A cup of milk.", "一杯牛奶。"), ("Candy", "🍬", "Sweet candy.", "甜糖果。")]},
         "D": {"upper": "D", "lower": "d", "words": [("Dog", "🐶", "Good doggy.", "好狗狗。"), ("Duck", "🦆", "The duck swims.", "鴨子游泳。"), ("Dolphin", "🐬", "Smart dolphin.", "聰明海豚。"), ("Drum", "🥁", "Play the drum.", "打鼓。"), ("Door", "🚪", "Open the door.", "開門。")]},
@@ -30,7 +30,7 @@ def get_full_db():
         "J": {"upper": "J", "lower": "j", "words": [("Jam", "🍯", "Sweet jam.", "甜果醬。"), ("Juice", "🧃", "Fruit juice.", "果汁。"), ("Jellyfish", "🪼", "Floating jellyfish.", "水母。"), ("Jet", "🛩️", "Fast jet.", "噴射機。"), ("Jump", "🦘", "Jump high.", "跳高。")]},
         "K": {"upper": "K", "lower": "k", "words": [("Kite", "🪁", "Fly a kite.", "放風箏。"), ("Koala", "🐨", "Cute koala.", "無尾熊。"), ("King", "👑", "The king.", "國王。"), ("Key", "🔑", "Golden key.", "金鑰匙。"), ("Kangaroo", "🦘", "Strong kangaroo.", "強壯袋鼠。")]},
         "L": {"upper": "L", "lower": "l", "words": [("Lion", "🦁", "King of animals.", "萬獸之王。"), ("Lemon", "🍋", "Sour lemon.", "酸檸檬。"), ("Leaf", "🍃", "Green leaf.", "綠葉。"), ("Lamp", "💡", "Bright lamp.", "明亮的燈。"), ("Lollipop", "🍭", "Sweet lollipop.", "棒棒糖。")]},
-        "M": {"upper": "M", "lower": "m", "words": [("Monkey", "🐒", "Funny monkey.", "有趣的猴子。"), ("Moon", "🌙", "Moon is white.", "月亮是白的。"), ("Milk", "🥛", "Drink milk.", "喝牛奶。"), ("Mouse", "🐭", "Small mouse.", "小老鼠。"), ("Mushroom", "🍄", "Red mushroom.", "紅蘑菇。")]},
+        "M": {"upper": "M", "lower": "m", "words": [("Monkey", "🐒", "Funny monkey.", "有趣的猴子。"), ("Moon", "🌙", "Moon is white.", "月亮是白的。"), ("Milk", "🥛", "Drink milk.", "喝牛奶。"), ("Mouse", "🐭", "Small mouse.", "老鼠。"), ("Mushroom", "🍄", "Red mushroom.", "紅蘑菇。")]},
         "N": {"upper": "N", "lower": "n", "words": [("Nose", "👃", "My nose.", "我的鼻子。"), ("Nut", "🥜", "Eat a nut.", "吃堅果。"), ("Nest", "🪹", "Bird's nest.", "鳥巢。"), ("Net", "🕸️", "Fishing net.", "魚網。"), ("Nurse", "👩‍⚕️", "Good nurse.", "好護理師。")]},
         "O": {"upper": "O", "lower": "o", "words": [("Orange", "🍊", "Juicy orange.", "多汁橘子。"), ("Owl", "🦉", "Wise owl.", "貓頭鷹。"), ("Octopus", "🐙", "Eight legs.", "八隻腳。"), ("Onion", "🧅", "Strong onion.", "洋蔥。"), ("Ocean", "🌊", "Deep ocean.", "深海。")]},
         "P": {"upper": "P", "lower": "p", "words": [("Pig", "🐷", "Pink pig.", "粉紅豬。"), ("Pear", "🍐", "Sweet pear.", "梨子。"), ("Panda", "🐼", "Cute panda.", "熊貓。"), ("Piano", "🎹", "Play piano.", "彈鋼琴。"), ("Pizza", "🍕", "Hot pizza.", "熱披薩。")]},
@@ -42,7 +42,7 @@ def get_full_db():
         "V": {"upper": "V", "lower": "v", "words": [("Van", "🚐", "Drive a van.", "箱型車。"), ("Violin", "🎻", "Play violin.", "小提琴。"), ("Vase", "🏺", "Pretty vase.", "花瓶。"), ("Vegetable", "🥦", "Healthy vegetables.", "健康蔬菜。"), ("Volcano", "🌋", "Hot volcano.", "火山。")]},
         "W": {"upper": "W", "lower": "w", "words": [("Whale", "🐋", "Big whale.", "大鯨魚。"), ("Watch", "⌚", "My watch.", "手錶。"), ("Water", "💧", "Drink water.", "水。"), ("Witch", "🧙‍♀️", "Funny witch.", "巫婆。"), ("Window", "🪟", "Close window.", "關窗。")]},
         "X": {"upper": "X", "lower": "x", "words": [("Xylophone", "🎼", "Play xylophone.", "木琴。"), ("Box", "📦", "A box.", "盒子。"), ("Fox", "🦊", "Red fox.", "狐狸。"), ("Six", "6️⃣", "Number six.", "數字六。"), ("X-ray", "🩻", "X-ray photo.", "X光。")]},
-        "Y": {"upper": "Y", "lower": "y", "words": [("Yo-yo", "🪀", "Red yo-yo.", "溜溜球。"), ("Yellow", "💛", "Bright yellow.", "亮黃色。"), ("Yacht", "🛥️", "White yacht.", "遊艇。"), ("Yak", "🐂", "Strong yak.", "氂牛。"), ("Yogurt", "🍦", "Eat yogurt.", "優格。")]},
+        "Y": {"upper": "Y", "lower": "y", "words": [("Yo-yo", "🪀", "Red yo-yo.", "溜溜球。"), ("Yellow", "💛", "Bright yellow.", "黃色。"), ("Yacht", "🛥️", "White yacht.", "遊艇。"), ("Yak", "🐂", "Strong yak.", "氂牛。"), ("Yogurt", "🍦", "Eat yogurt.", "優格。")]},
         "Z": {"upper": "Z", "lower": "z", "words": [("Zebra", "🦓", "Striped zebra.", "斑馬。"), ("Zoo", "🦁", "Go to the zoo.", "去動物園。"), ("Zero", "0️⃣", "Number zero.", "數字零。"), ("Zipper", "🤐", "Close zipper.", "拉鍊。"), ("Zigzag", "📉", "Zigzag line.", "鋸齒線。")]}
     }
 
@@ -64,49 +64,53 @@ with st.sidebar:
         st.session_state.user_score = 0
         st.rerun()
 
-# --- 4. 核心輔助函數 (JS 注入解決重複播放與跑不出來的問題) ---
+# --- 4. 輔助函數 (強制 JavaScript 觸發播放) ---
 def play_audio(text, lang, speed):
     clean = re.sub(r'[\u4e00-\u9fa5]', '', text)
     l_code = 'en' if "英" in lang else 'ja'
     tts = gTTS(text=clean, lang=l_code, slow=(speed < 1.0))
     
-    unique_id = datetime.now().strftime('%H%M%S%f')
-    filename = f"v_{unique_id}.mp3"
+    unique_file_id = datetime.now().strftime('%H%M%S%f')
+    filename = f"v_{unique_file_id}.mp3"
     tts.save(filename)
     
     with open(filename, "rb") as f:
         data = f.read()
         b64 = base64.b64encode(data).decode()
-        # 使用 JavaScript 強制重啟音訊物件
+        # 使用 JS 強制播放，解決重複點擊與跑不出來的問題
         audio_html = f"""
-            <audio id="audio_{unique_id}">
+            <audio id="audio_{unique_file_id}">
                 <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
             </audio>
             <script>
-                var audio = document.getElementById("audio_{unique_id}");
+                var audio = document.getElementById("audio_{unique_file_id}");
                 audio.play();
             </script>
         """
         st.components.v1.html(audio_html, height=0)
 
-# --- 5. 功能分頁 (架構封存) ---
+# --- 5. 功能分頁架構 ---
 tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字發音", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
 
 with tab1:
-    st.header("🔤 字母與單字發音練習")
+    st.header("🔤 字母與單字練習")
     letter = st.selectbox("請選擇字母", list(DB.keys()))
     info = DB[letter]
+    
     with st.container():
         c1, c2 = st.columns([1, 1])
         with c1:
             st.markdown(f"""<div style="background-color: #f0f2f6; border-radius: 20px; padding: 20px; text-align: center;"><span style="font-size: 120px; font-weight: bold; color: #FF4B4B;">{info['upper']}</span> <span style="font-size: 100px; font-weight: bold; color: #1C83E1;">{info['lower']}</span></div>""", unsafe_allow_html=True)
         with c2:
-            if st.button(f"🔊 聽字母名: {info['upper']}", key="v_letter_main"):
+            # 解決 NameError：將變數定義在正確位置
+            if st.button(f"🔊 聽字母名: {info['upper']}", key=f"btn_main_{letter}_{time.time()}"):
                 play_audio(info['upper'], target_lang, voice_speed)
-            st.info("若無聲音，請點擊按鈕重試（支援無限重複播放）")
+            st.info("支援無限次重複播放")
 
     st.divider()
     st.subheader(f"✨ {letter} 代表單字練習")
+    # 這裡使用 time.time() 作為動態 key 的一部分，確保按鈕永遠是新的
+    curr_time = str(time.time())
     for word, emoji, sent, tran in info["words"][:(3 if user_age <= 6 else 5)]:
         with st.container():
             col1, col2 = st.columns([1, 4])
@@ -115,8 +119,8 @@ with tab1:
                 st.subheader(word)
                 st.write(f"**Sentence:** {sent}")
                 st.caption(f"翻譯：{tran}")
-                # 每個按鈕配上動態 Key 確保重複點擊不衝突
-                if st.button(f"🔊 聽單字發音", key=f"v_{word}_{unique_id}"):
+                # 修正此處的 unique_id 錯誤，改用 word 與 curr_time 的組合
+                if st.button(f"🔊 聽發音", key=f"v_btn_{word}_{curr_time}"):
                     play_audio(f"{word}. {sent}", target_lang, voice_speed)
                     st.session_state.user_score = min(st.session_state.user_score + 1, MAX_SCORE)
             st.divider()
@@ -124,10 +128,11 @@ with tab1:
 with tab2:
     st.header("📖 短文教學解析")
     user_topic = st.text_input("📝 主題", "Park")
-    if st.button("🚀 生成教材內容"):
-        st.session_state['story_text'] = f"The {user_topic} is very beautiful. We can see many friends and play all day. It is a very happy day!"
+    if st.button("🚀 生成解析"):
+        st.session_state['story_text'] = f"The {user_topic} is very beautiful. We can see many friends here. We play all day. It is a very happy day!"
         st.session_state['story_vocab'] = [(f"{user_topic}", "主題"), ("Happy", "快樂")]
         st.session_state['story_gram'] = f"使用 'is' 描述狀態。"
+    
     if 'story_text' in st.session_state:
         st.subheader("📜 課文原文")
         for s in st.session_state['story_text'].split('.'):
@@ -135,6 +140,7 @@ with tab2:
                 st.markdown(f"""<div style="font-size: 32px; font-weight: 500; line-height: 1.6; color: #2E4053; margin-bottom: 15px;">• {s.strip()}.</div>""", unsafe_allow_html=True)
         if st.button("🔊 全文朗讀", key="v_story_full"):
             play_audio(st.session_state['story_text'], target_lang, voice_speed)
+        
         cv, cg = st.columns(2)
         with cv:
             st.subheader("📝 重點單字")
@@ -142,7 +148,7 @@ with tab2:
         with cg:
             st.subheader("💡 文法點撥")
             st.success(st.session_state['story_gram'])
-        with st.expander("👁️ 查看翻譯"): st.write("這是翻譯區內容。這是一個很棒的地方，我們可以看到很多朋友。今天真是快樂的一天。")
+        with st.expander("👁️ 查看翻譯"): st.write("（此處顯示翻譯內容）")
 
 with tab3:
     st.header("🎮 聽音辨圖挑戰")
@@ -158,14 +164,14 @@ with tab3:
         st.markdown("""<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;"><h1 style="font-size: 150px; margin: 0;">🌟</h1><h2 style="font-size: 60px; color: #FFD700;">Amazing!</h2></div>""", unsafe_allow_html=True)
         st.balloons(); time.sleep(1.5); st.session_state.show_reward = False; st.rerun()
 
-    if st.button("🔊 播放題目", key="v_game_q"):
+    if st.button("🔊 播放題目音檔", key="v_game_q"):
         play_audio(target[0], target_lang, voice_speed)
     
     cols = st.columns(3)
     for i, (word, emoji, sent, tran) in enumerate(st.session_state.game_data):
         with cols[i]:
             st.markdown(f"<h1 style='text-align:center; font-size:150px;'>{emoji}</h1>", unsafe_allow_html=True)
-            if st.button(f"{word}", key=f"g_{i}", use_container_width=True):
+            if st.button(f"{word}", key=f"g_btn_{i}_{time.time()}", use_container_width=True):
                 if word == target[0]:
                     st.session_state.user_score = min(st.session_state.user_score + 5, MAX_SCORE); st.session_state.show_reward = True; st.rerun()
                 else: st.error("❌ Try again!")
