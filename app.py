@@ -7,134 +7,130 @@ import streamlit.components.v1 as components
 # --- 頁面配置 ---
 st.set_page_config(page_title="專業語文學習機器人", page_icon="🎓", layout="wide")
 
-# --- 1. 核心教材資料庫 (依年齡與類別設計) ---
-# 單字與圖片關鍵字對應表 (類別化)
-VOCAB_DB = {
-    "動物 (Animals)": {
-        "easy": [("Dog", "🐶"), ("Cat", "🐱"), ("Bird", "🐦")],
-        "medium": [("Elephant", "🐘"), ("Giraffe", "🦒"), ("Lion", "🦁")],
-        "hard": [("Chameleon", "🦎"), ("Platypus", "🦆"), ("Kangaroo", "🦘")]
-    },
-    "食物 (Food)": {
-        "easy": [("Apple", "🍎"), ("Milk", "🥛"), ("Cake", "🍰")],
-        "medium": [("Sandwich", "🥪"), ("Broccoli", "🥦"), ("Spaghetti", "🍝")],
-        "hard": [("Ingredients", "🧂"), ("Nutrition", "🥗"), ("Delicacy", "🍽️")]
-    }
+# --- 1. A-Z 完整發音資料庫 (IPA + 秘訣) ---
+ALPHABET_DB = {
+    "A": {"le": "🅰️", "w": "Apple", "we": "🍎", "ipa": "/æ/", "tip": "嘴巴張大，舌頭放平"},
+    "B": {"le": "🅱️", "w": "Bear", "we": "🧸", "ipa": "/b/", "tip": "雙唇緊閉，突然噴氣"},
+    "C": {"le": "©️", "w": "Cat", "we": "🐱", "ipa": "/k/", "tip": "舌根抬起，快速吐氣"},
+    "D": {"le": "🇩", "w": "Dog", "we": "🐶", "ipa": "/d/", "tip": "舌尖頂住上齒齦，彈開"},
+    "E": {"le": "🇪", "w": "Elephant", "we": "🐘", "ipa": "/ɛ/", "tip": "嘴巴微張，嘴角向兩邊"},
+    "F": {"le": "🇫", "w": "Fish", "we": "🐟", "ipa": "/f/", "tip": "上齒輕咬下唇，吹氣"},
+    "G": {"le": "🇬", "w": "Goat", "we": "🐐", "ipa": "/ɡ/", "tip": "舌根抬起，喉嚨發聲"},
+    "H": {"le": "🇭", "w": "Hat", "we": "🎩", "ipa": "/h/", "tip": "張嘴，輕鬆吐氣"},
+    "I": {"le": "ℹ️", "w": "Igloo", "we": "🛖", "ipa": "/ɪ/", "tip": "嘴巴微張，舌尖抵下齒"},
+    "J": {"le": "🇯", "w": "Jam", "we": "🍯", "ipa": "/dʒ/", "tip": "雙唇突出，舌尖頂上顎"},
+    "K": {"le": "🇰", "w": "Kite", "we": "🪁", "ipa": "/k/", "tip": "快速吐氣"},
+    "L": {"le": "🇱", "w": "Lion", "we": "🦁", "ipa": "/l/", "tip": "舌尖頂住上齒齦"},
+    "M": {"le": "Ⓜ️", "w": "Monkey", "we": "🐒", "ipa": "/m/", "tip": "雙唇緊閉，鼻子出氣"},
+    "N": {"le": "🇳", "w": "Nose", "we": "👃", "ipa": "/n/", "tip": "舌尖頂上齒齦"},
+    "O": {"le": "🅾️", "w": "Orange", "we": "🍊", "ipa": "/ɑ/", "tip": "嘴巴張圓，舌頭放低"},
+    "P": {"le": "🅿️", "w": "Pig", "we": "🐷", "ipa": "/p/", "tip": "雙唇緊閉，噴氣"},
+    "Q": {"le": "🇶", "w": "Queen", "we": "👸", "ipa": "/kw/", "tip": "圓唇，舌根抬起"},
+    "R": {"le": "🇷", "w": "Rabbit", "we": "🐇", "ipa": "/r/", "tip": "舌尖捲起，不碰上顎"},
+    "S": {"le": "🇸", "w": "Sun", "we": "☀️", "ipa": "/s/", "tip": "舌尖靠近上齒齦，吹氣"},
+    "T": {"le": "🇹", "w": "Tiger", "we": "🐯", "ipa": "/t/", "tip": "舌尖頂上齒齦，彈開"},
+    "U": {"le": "🇺", "w": "Umbrella", "we": "🌂", "ipa": "/ʌ/", "tip": "嘴巴微張，舌頭放低"},
+    "V": {"le": "🇻", "w": "Van", "we": "🚐", "ipa": "/v/", "tip": "上齒咬下唇，發聲"},
+    "W": {"le": "🇼", "w": "Watch", "we": "⌚", "ipa": "/w/", "tip": "圓唇，舌根抬起"},
+    "X": {"le": "🇽", "w": "Box", "we": "📦", "ipa": "/ks/", "tip": "結尾發出/ks/音"},
+    "Y": {"le": "🇾", "w": "Yo-Yo", "we": "🪀", "ipa": "/j/", "tip": "嘴巴微張，舌尖抵下齒"},
+    "Z": {"le": "🇿", "w": "Zebra", "we": "🦓", "ipa": "/z/", "tip": "發出類似蜜蜂嗡嗡聲"}
 }
 
-# --- 2. 輔助函數 ---
-def play_audio(text, lang, speed=0.8):
-    # 清理非目標語系文字
-    clean_text = re.sub(r'[\u4e00-\u9fa5]', '', text).replace("A:", "").replace("B:", "")
-    lang_code = 'en' if "英" in lang else 'ja'
-    tts = gTTS(text=clean_text, lang=lang_code, slow=(speed < 1.0))
-    tts.save("speech.mp3")
-    with open("speech.mp3", "rb") as f:
-        st.audio(f.read(), format="audio/mp3")
-
-def get_stable_img(keyword):
-    # 加上可愛與插畫標籤，避免嚇到小孩
-    return f"https://loremflickr.com/800/600/{keyword},illustration,cute,cartoon/all"
-
-# --- 3. 側邊欄設定 (年齡與語系) ---
+# --- 2. 側邊欄設定 (年齡與語系) ---
 with st.sidebar:
-    st.header("⚙️ 教學參數設定")
+    st.header("⚙️ 教師設定面板")
     target_lang = st.radio("目標學習語言", ["英文 (English)", "日文 (日本語)"])
-    user_age = st.select_slider("學生年齡", options=[4, 6, 8, 10, 12])
+    user_age = st.select_slider("學生年齡區間", options=[4, 6, 8, 10, 12])
     
-    # 判定難度等級
-    if user_age <= 6: level = "easy"
-    elif user_age <= 10: level = "medium"
-    else: level = "hard"
+    # 智慧等級判定
+    if user_age <= 6: level = "基礎級 (Kindergarten)"
+    elif user_age <= 10: level = "初級 (Elementary)"
+    else: level = "進階級 (Junior High)"
     
-    st.write(f"📊 目前難度：**Level {level.upper()}**")
-    voice_speed = st.slider("調整語速", 0.5, 1.0, 0.8)
+    st.success(f"📌 目前教材等級：{level}")
+    voice_speed = st.slider("語速設定", 0.5, 1.0, 0.8)
 
-# --- 4. 功能分頁 ---
-tab1, tab2, tab3, tab4 = st.tabs(["🔤 專業發音", "🖼️ 單字類別", "📖 程度短文", "🎮 互動遊戲"])
+# --- 3. 功能分頁 ---
+tab1, tab2, tab3 = st.tabs(["🔤 專業發音練習", "📖 程度短文應用", "🎮 互動挑戰遊戲"])
 
-# --- Tab 1: 專業發音練習 ---
+# --- Tab 1: 26字母專業發音 ---
 with tab1:
-    st.header("🔤 Phonics & IPA 專業發音練習")
-    letter = st.selectbox("選擇練習字母", list("ABCDEFGHIJ"))
-    phonics_info = {
-        "A": {"word": "Apple", "ipa": "/æ/", "tip": "嘴巴張大，舌頭放平"},
-        "B": {"word": "Bear", "ipa": "/b/", "tip": "雙唇緊閉，突然噴氣"},
-        "C": {"word": "Cat", "ipa": "/k/", "tip": "舌根抬起，快速吐氣"}
-    }
-    info = phonics_info.get(letter, {"word": "Ant", "ipa": "/æ/", "tip": "基礎練習"})
+    st.header("🔤 Phonics & IPA 26字母大冒險")
+    letter_choice = st.selectbox("請選擇練習字母：", list(ALPHABET_DB.keys()))
+    data = ALPHABET_DB[letter_choice]
     
-    c1, c2 = st.columns(2)
-    with c1:
-        st.image(get_stable_img(info['word']), use_column_width=True)
-    with c2:
-        st.title(f"Letter: {letter}")
-        st.markdown(f"### **IPA 音標：{info['ipa']}**")
-        st.info(f"💡 發音秘訣：{info['tip']}")
-        if st.button(f"🔊 播放專業發音 ({letter})"):
-            play_audio(f"{letter}, {letter}, {info['word']}", target_lang)
+    # 排版展示：左右 Emoji
+    st.markdown(f"""
+        <div style="display: flex; justify-content: center; align-items: center; gap: 40px; background: white; padding: 20px; border-radius: 20px;">
+            <div style="font-size: 150px;">{data['le']}</div>
+            <div style="font-size: 60px; color: #FFB6C1;">➡️</div>
+            <div style="font-size: 150px;">{data['we']}</div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"## **Word: {data['w']}**")
+        st.markdown(f"### **IPA: {data['ipa']}**")
+    with col2:
+        st.warning(f"💡 發音技巧：{data['tip']}")
+        if st.button(f"🔊 播放專業發音 ({letter_choice})"):
+            clean_text = f"{letter_choice}, {letter_choice}, {data['w']}"
+            lang_code = 'en' if "英" in target_lang else 'ja'
+            tts = gTTS(text=clean_text, lang=lang_code, slow=True)
+            tts.save("speech.mp3")
+            with open("speech.mp3", "rb") as f:
+                st.audio(f.read(), format="audio/mp3")
 
-# --- Tab 2: 類別化單字卡 ---
+# --- Tab 2: 程度短文 (根據年齡動態變化) ---
 with tab2:
-    st.header("🖼️ 分類閃視卡")
-    category = st.selectbox("選擇主題類別", list(VOCAB_DB.keys()))
-    words_to_show = VOCAB_DB[category][level]
+    st.header(f"📖 {user_age}歲 專屬情境小文章")
+    topic = st.text_input("輸入你想學的主題：", "公園 (Park)")
     
-    # 依難度調整顯示數量
-    cols = st.columns(len(words_to_show))
-    for i, (w, emoji) in enumerate(words_to_show):
-        with cols[i]:
-            st.markdown(f"<h1 style='text-align:center;'>{emoji}</h1>", unsafe_allow_html=True)
-            st.markdown(f"<p style='text-align:center;'><b>{w}</b></p>", unsafe_allow_html=True)
-            if st.button(f"🔊", key=f"v_{w}"):
-                play_audio(w, target_lang)
-
-# --- Tab 3: 程度短文 (依年齡生成) ---
-with tab3:
-    st.header(f"📖 {user_age}歲 專屬短文閱讀")
-    story_topic = st.text_input("輸入短文主題：", "森林")
-    
-    # 依年齡調整句型難度
+    # 動態文章邏輯
     if user_age <= 6:
-        story = f"Look! A {story_topic}. It is big. I like the {story_topic}."
-        trans = f"看！這是一個{story_topic}。它很大。我喜歡這個{story_topic}。"
+        content = f"I see a {topic}. The {topic} is big. It is very pretty."
+        trans = f"我看見一個{topic}。它很大。它非常漂亮。"
     elif user_age <= 10:
-        story = f"Today we went to the {story_topic}. The weather was beautiful. We saw many interesting things there."
-        trans = f"今天我們去了{story_topic}。天氣很漂亮。我們在那裡看到了許多有趣的事情。"
+        content = f"Today is a sunny day. We are playing at the {topic}. I feel very happy with my friends."
+        trans = f"今天天氣晴朗。我們正在{topic}玩耍。我和朋友們在一起覺得很快樂。"
     else:
-        story = f"Exploring the {story_topic} provides a unique opportunity to understand nature. We should protect our environment for the future."
-        trans = f"探索{story_topic}提供了一個了解自然的獨特機會。我們應該為了未來保護我們的環境。"
+        content = f"The {topic} is an essential part of our community. We should maintain its beauty for everyone to enjoy."
+        trans = f"{topic}是我們社區的重要組成部分。我們應該保持它的美感，讓每個人都能享受。"
 
-    st.image(get_stable_img(story_topic), width=500)
-    st.markdown(f"**{story}**")
-    st.caption(trans)
-    if st.button("🔊 播放全文內容"):
-        play_audio(story, target_lang)
+    st.info(f"**{content}**")
+    st.caption(f"翻譯：{trans}")
+    if st.button("🔊 播放全文 (0.8x)"):
+        lang_code = 'en' if "英" in target_lang else 'ja'
+        tts = gTTS(text=content, lang=lang_code, slow=True)
+        tts.save("story.mp3")
+        with open("story.mp3", "rb") as f:
+            st.audio(f.read(), format="audio/mp3")
 
-# --- Tab 4: 互動遊戲 (語言隨動) ---
-with tab4:
+# --- Tab 3: 遊戲區 (語言隨動) ---
+with tab3:
     st.header("🎮 語言互動挑戰")
-    
-    # 依語言切換指令
     game_instr = {
         "英文 (English)": {"title": "Listen & Click", "task": "Click on 4 stars!", "success": "Amazing! You got it!"},
         "日文 (日本語)": {"title": "きいて、クリックして", "task": "ほしを 4つ おしてね！", "success": "すごい！せいかいです！"}
     }
-    curr_instr = game_instr[target_lang]
+    curr = game_instr[target_lang]
     
     game_html = f"""
-    <div style="background:white; padding:20px; border-radius:20px; text-align:center; border:4px solid #87CEFA;">
-        <h2>{curr_instr['title']}</h2>
-        <p style="font-size:20px;">{curr_instr['task']}</p>
-        <div style="font-size:60px;">
-            <span onclick="check(this)" style="cursor:pointer">⭐</span>
-            <span onclick="check(this)" style="cursor:pointer">⭐</span>
-            <span onclick="check(this)" style="cursor:pointer">⭐</span>
-            <span onclick="check(this)" style="cursor:pointer">⭐</span>
-            <span onclick="check(this)" style="cursor:pointer">⭐</span>
-            <span onclick="check(this)" style="cursor:pointer">⭐</span>
+    <div style="background:white; padding:20px; border-radius:20px; text-align:center; border:4px solid #FFB6C1;">
+        <h2>{curr['title']}</h2>
+        <p style="font-size:24px;">{curr['task']}</p>
+        <div style="font-size:70px;">
+            <span onclick="check(this)" style="cursor:pointer; margin:10px;">⭐</span>
+            <span onclick="check(this)" style="cursor:pointer; margin:10px;">⭐</span>
+            <span onclick="check(this)" style="cursor:pointer; margin:10px;">⭐</span>
+            <span onclick="check(this)" style="cursor:pointer; margin:10px;">⭐</span>
+            <span onclick="check(this)" style="cursor:pointer; margin:10px;">⭐</span>
+            <span onclick="check(this)" style="cursor:pointer; margin:10px;">⭐</span>
         </div>
-        <h2 id="msg" style="color:#4CAF50;"></h2>
+        <h1 id="msg" style="color:#4CAF50;"></h1>
+        <button onclick="location.reload()" style="padding:10px; border-radius:10px;">Reset</button>
     </div>
     <script>
         let count = 0;
@@ -142,8 +138,8 @@ with tab4:
             if(el.style.opacity == '0.2') return;
             el.style.opacity = '0.2';
             count++;
-            if(count == 4) document.getElementById('msg').innerText = "{curr_instr['success']}";
+            if(count == 4) document.getElementById('msg').innerText = "{curr['success']}";
         }}
     </script>
     """
-    components.html(game_html, height=400)
+    components.html(game_html, height=450)
