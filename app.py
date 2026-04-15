@@ -9,7 +9,7 @@ if 'user_score' not in st.session_state:
     st.session_state.user_score = 0
 MAX_SCORE = 100
 
-# --- 2. A-Z 完整資料庫 (鎖定 26 字母) ---
+# --- 2. A-Z 完整資料庫 ---
 @st.cache_data
 def get_full_db():
     return {
@@ -18,7 +18,7 @@ def get_full_db():
         "C": {"upper": "C", "lower": "c", "words": [("Cat", "🐱", "The cat is cute.", "貓很可愛。"), ("Cake", "🎂", "Happy birthday cake.", "生日蛋糕。"), ("Car", "🚗", "A fast car.", "快車。"), ("Cup", "🥛", "A cup of milk.", "一杯牛奶。"), ("Candy", "🍬", "Sweet candy.", "甜糖果。")]},
         "D": {"upper": "D", "lower": "d", "words": [("Dog", "🐶", "Good doggy.", "好狗狗。"), ("Duck", "🦆", "The duck swims.", "鴨子游泳。"), ("Dolphin", "🐬", "Smart dolphin.", "聰明海豚。"), ("Drum", "🥁", "Play the drum.", "打鼓。"), ("Door", "🚪", "Open the door.", "開門。")]},
         "E": {"upper": "E", "lower": "e", "words": [("Elephant", "🐘", "Big elephant.", "大象很大。"), ("Egg", "🥚", "I eat an egg.", "我吃蛋。"), ("Eagle", "🦅", "The eagle flies.", "老鷹飛。"), ("Eye", "👁️", "Open your eyes.", "張開眼睛。"), ("Ear", "👂", "I hear music.", "我聽見音樂。")]},
-        "F": {"upper": "F", "lower": "f", "words": [("Fish", "🐟", "Fish in the sea.", "海裡的魚。"), ("Frog", "🐸", "The frog jumps.", "青蛙跳。"), ("Flower", "🌻", "Pretty flower.", "漂亮的花。"), ("Fan", "🌀", "Cool fan.", "涼風扇。"), ("Fork", "🍴", "Eat with a fork.", "用叉子吃。")]},
+        "F": {"upper": "F", "lower": "f", "words": [("Fish", "🐟", "Fish in the sea.", "海裡的魚。"), ("Frog", "🐸", "The frog jumps.", "青蛙跳。"), ("Flower", "🌻", "A pretty flower.", "漂亮的花。"), ("Fan", "🌀", "Cool fan.", "涼風扇。"), ("Fork", "🍴", "Eat with a fork.", "用叉子吃。")]},
         "G": {"upper": "G", "lower": "g", "words": [("Goat", "🐐", "The goat eats grass.", "山羊吃草。"), ("Giraffe", "🦒", "Long neck.", "長脖子。"), ("Grapes", "🍇", "Sweet grapes.", "甜葡萄。"), ("Guitar", "🎸", "Play guitar.", "彈吉他。"), ("Gift", "🎁", "A big gift.", "大禮物。")]},
         "H": {"upper": "H", "lower": "h", "words": [("Horse", "🐎", "I ride a horse.", "我騎馬。"), ("Hat", "🎩", "Wear a hat.", "戴帽子。"), ("House", "🏠", "A big house.", "大房子。"), ("Heart", "❤️", "My heart.", "我的心。"), ("Hippo", "🦛", "Fat hippo.", "胖河馬。")]},
         "I": {"upper": "I", "lower": "i", "words": [("Ice cream", "🍦", "Cold ice cream.", "冷冰淇淋。"), ("Igloo", "🛖", "Ice house.", "冰屋。"), ("Ink", "🖋️", "Blue ink.", "藍墨水。"), ("Iron", "💨", "Hot iron.", "熱熨斗。"), ("Insect", "🐞", "Small insect.", "小昆蟲。")]},
@@ -53,30 +53,31 @@ with st.sidebar:
     st.markdown(f"<h1 style='text-align:center; font-size:100px;'>{d_emo}</h1>", unsafe_allow_html=True)
     st.divider()
     user_age = st.select_slider("學生年齡", options=[4, 6, 8, 10, 12])
-    target_lang_choice = st.radio("目標語言", ["英文 (English)", "日文 (日本語)"])
+    target_lang_label = st.radio("目標語言", ["英文 (English)", "日文 (日本語)"])
     voice_speed = st.slider("語速設定", 0.5, 1.0, 0.8)
     if st.button("🔄 積分歸零 (Reset)"):
         st.session_state.user_score = 0
         st.rerun()
 
-# --- 4. 核心輔助函數：瀏覽器原生語音 (Web Speech API) ---
-def speak(text, lang_choice, rate):
-    lang_code = "en-US" if "英" in lang_choice else "ja-JP"
-    # 直接透過 JavaScript 呼叫系統內建語音，不依賴任何外部 API 或音軌組件
-    js_code = f"""
+# --- 4. 核心發音引擎 (Web Speech API 全域版) ---
+def speak(text):
+    lang_code = "en-US" if "英" in target_lang_label else "ja-JP"
+    # 使用 JavaScript 直連瀏覽器語音引擎，完全避開 mp3 生成與快取
+    js_script = f"""
         <script>
-        var msg = new SpeechSynthesisUtterance();
-        msg.text = "{text}";
-        msg.lang = "{lang_code}";
-        msg.rate = {rate};
-        window.speechSynthesis.cancel(); // 先停止之前的發音
-        window.speechSynthesis.speak(msg);
+        var synth = window.speechSynthesis;
+        var utter = new SpeechSynthesisUtterance("{text}");
+        utter.lang = "{lang_code}";
+        utter.rate = {voice_speed};
+        synth.cancel();
+        synth.speak(utter);
         </script>
     """
-    st.components.v1.html(js_code, height=0)
+    # height=0 確保不佔空間，且每一次呼叫都強迫執行
+    st.components.v1.html(js_script, height=0)
 
-# --- 5. 功能分頁 ---
-tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字練習", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
+# --- 5. 功能分頁架構 ---
+tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字發音", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
 
 with tab1:
     st.header("🔤 字母與單字練習")
@@ -87,10 +88,10 @@ with tab1:
         with c1:
             st.markdown(f"""<div style="background-color: #f0f2f6; border-radius: 20px; padding: 20px; text-align: center;"><span style="font-size: 120px; font-weight: bold; color: #FF4B4B;">{info['upper']}</span> <span style="font-size: 100px; font-weight: bold; color: #1C83E1;">{info['lower']}</span></div>""", unsafe_allow_html=True)
         with c2:
-            st.write("### 🗣️ 系統語音發聲")
-            if st.button(f"🔊 聽字母 {info['upper']} 音", key=f"btn_let_{letter}_{time.time()}"):
-                speak(info['upper'], target_lang_choice, voice_speed)
-            st.caption("支援無限次重複點擊，若無聲音請確認電腦靜音已關閉。")
+            st.write("### 🗣️ 系統原生語音")
+            if st.button(f"🔊 聽字母 {info['upper']} 音", key=f"v_let_{letter}_{time.time()}"):
+                speak(info['upper'])
+            st.caption("支援無限次重複點擊，若無聲音請點選畫面任一處解鎖瀏覽器音訊。")
 
     st.divider()
     st.subheader(f"✨ {letter} 代表單字練習")
@@ -103,40 +104,41 @@ with tab1:
                 st.write(f"**Sentence:** {sent}")
                 st.caption(f"翻譯：{tran}")
                 if st.button(f"🔊 播放單字發音", key=f"btn_w_{word}_{time.time()}"):
-                    speak(f"{word}. {sent}", target_lang_choice, voice_speed)
+                    speak(f"{word}. {sent}")
                     st.session_state.user_score = min(st.session_state.user_score + 1, MAX_SCORE)
             st.divider()
 
-# --- Tab 2: 短文解析 ---
+# --- Tab 2: 短文解析 (中文主題搜尋) ---
 with tab2:
     st.header("📖 自定義短文教學解析")
-    topic_map = {"農場": "Farm", "公園": "Park", "森林": "Forest", "海洋": "Ocean", "太空": "Space", "學校": "School"}
-    user_topic_cn = st.text_input("📝 請輸入中文主題 (如：農場)", "農場")
+    t_map = {"農場": "Farm", "公園": "Park", "森林": "Forest", "海洋": "Ocean", "太空": "Space", "學校": "School"}
+    user_topic_cn = st.text_input("📝 請輸入主題 (中文搜尋，如：農場)", "農場")
     
-    if st.button("🚀 生成教材內容", key="gen_story"):
-        t_en = topic_map.get(user_topic_cn, user_topic_cn)
-        st.session_state['s_text'] = f"The {t_en} is very big. We can see many friends here. We play together. It is a happy day!"
-        st.session_state['s_vocab'] = [(f"{t_en}", "主題"), ("Happy", "快樂")]
+    if st.button("🚀 生成解析內容", key="gen_story"):
+        en_t = t_map.get(user_topic_cn, user_topic_cn)
+        st.session_state['s_txt'] = f"The {en_t} is very big. We can see many friends here. We play all day. It is a very happy day!"
+        st.session_state['s_voc'] = [(f"{en_t}", "主題"), ("Happy", "快樂")]
         st.session_state['s_gram'] = f"現在式用法：使用 'is' 描述事物。"
-        st.session_state['s_tran'] = f"這個地方非常大。我們在那裡看到很多朋友。我們一起玩。今天真是快樂的一天！"
+        st.session_state['s_tr'] = f"這是一個很棒的地方。我們在那裡看到很多朋友。我們整天玩耍。今天真是快樂的一天！"
 
-    if 's_text' in st.session_state:
+    if 's_txt' in st.session_state:
         st.subheader("📜 課文原文")
-        for s in st.session_state['s_text'].split('.'):
+        # 關鍵：大字體 + 一句一行
+        for s in st.session_state['s_txt'].split('.'):
             if s.strip():
                 st.markdown(f"""<div style="font-size: 32px; font-weight: 500; line-height: 1.6; color: #2E4053; margin-bottom: 15px;">• {s.strip()}.</div>""", unsafe_allow_html=True)
         if st.button("🔊 全文朗讀", key=f"btn_s_full_{time.time()}"):
-            speak(st.session_state['s_text'], target_lang_choice, voice_speed)
+            speak(st.session_state['s_txt'])
         
         cv, cg = st.columns(2)
         with cv:
             st.subheader("📝 重點單字")
-            for v, k in st.session_state['s_vocab']: st.write(f"• **{v}**: {k}")
+            for v, k in st.session_state['s_voc']: st.write(f"• **{v}**: {k}")
         with cg:
             st.subheader("💡 文法點撥")
             st.success(st.session_state['s_gram'])
         with st.expander("👁️ 查看中文翻譯"): 
-            st.write(st.session_state['s_tran'])
+            st.write(st.session_state['s_tr'])
 
 with tab3:
     st.header("🎮 聽音辨圖挑戰")
@@ -152,8 +154,8 @@ with tab3:
         st.markdown("""<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;"><h1 style="font-size: 150px; margin: 0;">🌟</h1><h2 style="font-size: 60px; color: #FFD700;">Amazing!</h2></div>""", unsafe_allow_html=True)
         st.balloons(); time.sleep(1.5); st.session_state.show_reward = False; st.rerun()
 
-    if st.button("🔊 聽題目發音", key=f"btn_g_q_{time.time()}"):
-        speak(target[0], target_lang_choice, voice_speed)
+    if st.button("🔊 播放題目題目", key=f"btn_g_q_{time.time()}"):
+        speak(target[0])
     
     cols = st.columns(3)
     for i, (word, emoji, sent, tran) in enumerate(st.session_state.game_data):
