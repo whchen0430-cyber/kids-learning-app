@@ -17,7 +17,7 @@ MAX_SCORE = 150
 if st.session_state.user_score >= MAX_SCORE:
     st.session_state.user_score = 0
 
-# --- 2. A-Z 完整資料庫 ---
+# --- 2. A-Z 完整資料庫 (結構鎖定) ---
 @st.cache_data
 def get_full_db():
     return {
@@ -33,7 +33,7 @@ def get_full_db():
         "J": {"upper": "J", "lower": "j", "words": [("Jam", "🍯", "Sweet jam.", "甜果醬。"), ("Juice", "🧃", "Fruit juice.", "果汁。"), ("Jellyfish", "🪼", "Floating jellyfish.", "水母。"), ("Jet", "🛩️", "Fast jet.", "噴射機。"), ("Jump", "🦘", "Jump high.", "跳高。")]},
         "K": {"upper": "K", "lower": "k", "words": [("Kite", "🪁", "Fly a kite.", "放風箏。"), ("Koala", "🐨", "Cute koala.", "無尾熊。"), ("King", "👑", "The king.", "國王。"), ("Key", "🔑", "Golden key.", "金鑰匙。"), ("Kangaroo", "🦘", "Strong kangaroo.", "強壯袋鼠。")]},
         "L": {"upper": "L", "lower": "l", "words": [("Lion", "🦁", "King of animals.", "萬獸之王。"), ("Lemon", "🍋", "Sour lemon.", "酸檸檬。"), ("Leaf", "🍃", "Green leaf.", "綠葉。"), ("Lamp", "💡", "Bright lamp.", "明亮的燈。"), ("Lollipop", "🍭", "Sweet lollipop.", "棒棒糖。")]},
-        "M": {"upper": "M", "lower": "m", "words": [("Monkey", "🐒", "Funny monkey.", "有趣的猴子。"), ("Moon", "🌙", "Moon is white.", "月亮是白的。"), ("Milk", "🥛", "Drink milk.", "喝牛奶。"), ("Mouse", "🐭", "Small mouse.", "小老鼠。"), ("Mushroom", "🍄", "Red mushroom.", "紅蘑菇。")]},
+        "M": {"upper": "M", "lower": "m", "words": [("Monkey", "🐒", "Funny monkey.", "有趣的猴子。"), ("Moon", "🌙", "Moon is white.", "月亮是白的。"), ("Milk", "🥛", "Drink milk.", "喝牛奶。"), ("Mouse", "🐭", "Small mouse.", "老鼠。"), ("Mushroom", "🍄", "Red mushroom.", "紅蘑菇。")]},
         "N": {"upper": "N", "lower": "n", "words": [("Nose", "👃", "My nose.", "我的鼻子。"), ("Nut", "🥜", "Eat a nut.", "吃堅果。"), ("Nest", "🪹", "Bird's nest.", "鳥巢。"), ("Net", "🕸️", "Fishing net.", "魚網。"), ("Nurse", "👩‍⚕️", "Good nurse.", "好護理師。")]},
         "O": {"upper": "O", "lower": "o", "words": [("Orange", "🍊", "Juicy orange.", "多汁橘子。"), ("Owl", "🦉", "Wise owl.", "貓頭鷹。"), ("Octopus", "🐙", "Eight legs.", "八隻腳。"), ("Onion", "🧅", "Strong onion.", "洋蔥。"), ("Ocean", "🌊", "Deep ocean.", "深海。")]},
         "P": {"upper": "P", "lower": "p", "words": [("Pig", "🐷", "Pink pig.", "粉紅豬。"), ("Pear", "🍐", "Sweet pear.", "梨子。"), ("Panda", "🐼", "Cute panda.", "熊貓。"), ("Piano", "🎹", "Play piano.", "彈鋼琴。"), ("Pizza", "🍕", "Hot pizza.", "熱披薩。")]},
@@ -46,7 +46,7 @@ def get_full_db():
         "W": {"upper": "W", "lower": "w", "words": [("Whale", "🐋", "Big whale.", "大鯨魚。"), ("Watch", "⌚", "My watch.", "手錶。"), ("Water", "💧", "Drink water.", "水。"), ("Witch", "🧙‍♀️", "Funny witch.", "巫婆。"), ("Window", "🪟", "Close window.", "窗戶。")]},
         "X": {"upper": "X", "lower": "x", "words": [("Xylophone", "🎼", "Play xylophone.", "木琴。"), ("Box", "📦", "A box.", "盒子。"), ("Fox", "🦊", "Red fox.", "狐狸。"), ("Six", "6️⃣", "Number six.", "數字六。"), ("X-ray", "🩻", "X-ray photo.", "X光。")]},
         "Y": {"upper": "Y", "lower": "y", "words": [("Yo-yo", "🪀", "Red yo-yo.", "溜溜球。"), ("Yellow", "💛", "Bright yellow.", "黃色。"), ("Yacht", "🛥️", "White yacht.", "遊艇。"), ("Yak", "🐂", "Strong yak.", "氂牛。"), ("Yogurt", "🍦", "Eat yogurt.", "優格。")]},
-        "Z": {"upper": "Z", "lower": "z", "words": [("Zebra", "🦓", "Striped zebra.", "斑馬。"), ("Zoo", "🦁", "Go to the zoo.", "去動物園。"), ("Zero", "0️⃣", "Number zero.", "數字零。"), ("Zipper", "🤐", "Close zipper.", "拉鍊。"), ("Zigzag", "📉", "Zigzag line.", "鋸齒線。")]}
+        "Z": {"upper": "Z", "lower": "z", "words": [("Zebra", "🦓", "Striped zebra.", "斑馬。"), ("Zoo", "🦁", "Go to the zoo.", "去動物園。"), ("Zero", "0️⃣", "Number zero.", "數字營。"), ("Zipper", "🤐", "Close zipper.", "拉鍊。"), ("Zigzag", "📉", "Zigzag line.", "鋸齒線。")]}
     }
 
 DB = get_full_db()
@@ -63,7 +63,7 @@ with st.sidebar:
     elif score < 60:
         d_emo, d_text, d_size, d_color = "🦖", "幼龍孵化現身！", "50px", "#90EE90"
     elif score < 90:
-        d_emo, d_text, d_size, d_color = "🦕", "成長中的雷龍", "90px", "#2E8B57"
+        d_emo, d_text, d_size, d_color = "泛綠龍", "成長中的雷龍", "90px", "#2E8B57"
     elif score < 120:
         d_emo, d_text, d_size, d_color = "🦖", "威猛霸王龍", "130px", "#FF4500"
     else:
@@ -88,7 +88,7 @@ def get_audio_bytes(text, lang_choice, speed):
     return fp.getvalue()
 
 # --- 5. 分頁架構 ---
-tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字練習", "📖 短文指令解析", "🎮 互動遊戲區", "🏆 成就紀錄"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔤 字母與單字練習", "📖 短文內容生成", "🎮 互動遊戲區", "🏆 成就紀錄"])
 
 with tab1:
     st.header("🔤 字母發音練習")
@@ -117,42 +117,45 @@ with tab1:
                     st.session_state.user_score = min(st.session_state.user_score + 1, 150)
             st.divider()
 
-# --- Tab 2: 短文解析 (依年齡生成純英文課文) ---
+# --- Tab 2: 萬能短文生成 (解鎖主題限制) ---
 with tab2:
-    st.header("📖 自定義短文教學解析")
-    t_map = {"農場": "Farm", "公園": "Park", "森林": "Forest", "海洋": "Ocean", "太空": "Space"}
-    user_topic_cn = st.text_input("📝 請輸入中文主題 (如：農場)", "農場")
+    st.header("📖 萬能自定義教材生成")
     
-    if st.button("🚀 生成解析內容"):
-        en_t = t_map.get(user_topic_cn, user_topic_cn)
-        # 精準年齡分級邏輯 (純英文產出)
+    # 用戶輸入任何內容
+    user_raw_input = st.text_input("📝 請輸入您想要的主題 (直接輸入內容，如：我的小狗、去海邊、魔法森林)", "旅遊")
+    
+    if st.button("🚀 生成解析內容", key="gen_btn"):
+        # 簡單的中文關鍵字到英文模擬 (這裡實務上會呼叫翻譯，模擬邏輯如下)
+        en_topic = user_raw_input # 直接使用或模擬翻譯
+        
+        # 依年齡精準分級邏輯 (純英文產出)
         if user_age == 4:
-            st.session_state['s_text'] = f"The {en_t} is big. We see friends. It is happy."
+            st.session_state['s_text'] = f"The {en_topic} is fun. We go now. It is happy."
             st.session_state['s_gram'] = "Level 4: 極簡單句 (S+V+SC)。"
         elif user_age == 6:
-            st.session_state['s_text'] = f"The {en_t} is very big. I see a green animal. We like to play here."
-            st.session_state['s_gram'] = "Level 6: 加入形容詞 (Color/Size)。"
+            st.session_state['s_text'] = f"We have a nice {en_topic}. I see it today. We like to play with it."
+            st.session_state['s_gram'] = "Level 6: 簡單敘述句。"
         elif user_age == 8:
-            st.session_state['s_text'] = f"The {en_t} is a great place to visit. We can see many friends and play together all day."
-            st.session_state['s_gram'] = "Level 8: 助動詞 (can) 與不定詞用法。"
+            st.session_state['s_text'] = f"The {en_topic} is a great choice for us. We can learn many things and have fun together."
+            st.session_state['s_gram'] = "Level 8: 助動詞 (can) 運用。"
         elif user_age == 10:
-            st.session_state['s_text'] = f"When we visit the {en_t}, we see many interesting things. My friends and I always have fun there."
-            st.session_state['s_gram'] = "Level 10: 副詞子句 (When...)。"
+            st.session_state['s_text'] = f"Because we like the {en_topic}, we decide to explore it. It brings us much joy every day."
+            st.session_state['s_gram'] = "Level 10: 從屬連接詞 (Because) 句型。"
         else: # 12歲
-            st.session_state['s_text'] = f"The {en_t} is an incredible environment where we can explore the beauty of nature. Playing with friends here creates wonderful memories that last forever."
-            st.session_state['s_gram'] = "Level 12: 形容詞子句 (where/that) 與動名詞主詞。"
+            st.session_state['s_text'] = f"The {en_topic} offers an amazing experience that allows us to discover the world. Everyone believes that this journey is absolutely worth taking."
+            st.session_state['s_gram'] = "Level 12: 形容詞子句與名詞子句 (that) 的結合。"
         
-        st.session_state['s_voc'] = [(f"{en_t}", "主題")]
-        st.session_state['s_tr'] = "（中文翻譯顯示於下方隱藏區）"
+        st.session_state['s_voc'] = [(f"{en_topic}", "輸入主題")]
+        st.session_state['s_tr'] = f"這是關於「{user_raw_input}」的內容。這是一個很棒的體驗！我們學到了很多東西。"
 
     if 's_text' in st.session_state:
-        st.subheader("📜 課文原文 (100% English)")
+        st.subheader("📜 課文原文 (English Only)")
+        # 鎖定結構：大字體 + 一句一行
         for s in st.session_state['s_text'].split('.'):
             if s.strip():
-                # 這裡強制一行一句，且絕不包含中文
                 st.markdown(f"""<div style="font-size: 32px; font-weight: 500; line-height: 1.6; color: #2E4053; margin-bottom: 15px;">• {s.strip()}.</div>""", unsafe_allow_html=True)
         
-        if st.button("🔊 準備全文朗讀音軌"):
+        if st.button("🔊 播放全文朗讀"):
             st.audio(get_audio_bytes(st.session_state['s_text'], target_lang, voice_speed), format="audio/mp3")
         
         cv, cg = st.columns(2)
@@ -163,9 +166,9 @@ with tab2:
             st.subheader("💡 文法點撥")
             st.success(st.session_state['s_gram'])
         with st.expander("👁️ 查看中文翻譯"): 
-            st.write("這是一個很棒的地方。我們可以看到很多朋友。我們整天在那裡玩。今天真是快樂的一天！")
+            st.write(st.session_state['s_tr'])
 
-# --- Tab 3: 遊戲區 (自動連讀刷新) ---
+# --- Tab 3: 遊戲區 (自動換題機制) ---
 with tab3:
     st.header("🎮 聽音辨圖挑戰")
     def get_new_question():
